@@ -1,0 +1,11 @@
+[package]
+name = "optimizely_proc_macro"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies.optimizely]
+path = "../optimizely"
+features = ["online"]
+
+[lib]
+proc-macro = true

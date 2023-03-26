@@ -1,5 +1,6 @@
 [workspace]
 members = [
     "optimizely",
+    "optimizely_proc_macro",
     "examples/*",
 ]
