@@ -3,6 +3,12 @@ name = "optimizely_proc_macro"
 version = "0.1.0"
 edition = "2021"
 
+[dependencies]
+syn = "2.0"
+quote = "1.0"
+proc-macro2 = "1.0"
+ureq = "2.5"
+
 [dependencies.optimizely]
 path = "../optimizely"
 features = ["online"]

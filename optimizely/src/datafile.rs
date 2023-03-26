@@ -10,7 +10,7 @@ pub use error::DatafileError;
 pub(crate) use event::Event;
 pub(crate) use experiment::Experiment;
 pub(crate) use feature_flag::FeatureFlag;
-pub(crate) use json::Json;
+pub use json::Json;
 pub(crate) use rollout::Rollout;
 pub(crate) use traffic_allocation::TrafficAllocation;
 pub(crate) use variation::Variation;
@@ -26,7 +26,8 @@ mod traffic_allocation;
 mod variation;
 
 #[derive(Debug)]
-pub(crate) struct Datafile {
+/// Contains all the settings, suchs as feature flags, events, and audiences
+pub struct Datafile {
     account_id: String,
     revision: u32,
     feature_flags: HashMap<String, FeatureFlag>,
@@ -35,7 +36,19 @@ pub(crate) struct Datafile {
 }
 
 impl Datafile {
-    pub(crate) fn build(json: &mut Json) -> Result<Datafile, DatafileError> {
+    /// Creates an empty Datafile struct
+    pub fn new<T: Into<String>>(account_id: T, revision: u32) -> Datafile {
+        Datafile {
+            account_id: account_id.into(),
+            revision,
+            feature_flags: HashMap::new(),
+            #[cfg(feature = "online")]
+            events: HashMap::new(),
+        }
+    }
+
+    /// Create Datafile from JSON
+    pub fn build(json: &mut Json) -> Result<Datafile, DatafileError> {
         // Get account_id as String
         let account_id = json.get("accountId")?.as_string()?;
 
@@ -97,18 +110,22 @@ impl Datafile {
         })
     }
 
+    /// Account ID of the datafile
     pub fn account_id(&self) -> &str {
         &self.account_id
     }
 
+    /// Revision of the datafile
     pub fn revision(&self) -> u32 {
         self.revision
     }
 
+    /// Find a specific flag
     pub fn get_flag(&self, flag_key: &str) -> Option<&FeatureFlag> {
         self.feature_flags.get(flag_key)
     }
 
+    /// Find a specific event
     #[cfg(feature = "online")]
     pub fn get_event(&self, event_key: &str) -> Option<&Event> {
         self.events.get(event_key)

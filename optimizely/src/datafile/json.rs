@@ -10,7 +10,8 @@ const TYPE_INTEGER: &str = "u64";
 const TYPE_BOOLEAN: &str = "bool";
 const TYPE_ARRAY: &str = "array";
 
-pub(crate) struct Json {
+/// Wrapper for serde_json::Value for easier error handling
+pub struct Json {
     value: Value,
 }
 
@@ -19,7 +20,8 @@ impl Json {
         Json { value }
     }
 
-    pub(crate) fn build(content: &str) -> Result<Json, DatafileError> {
+    /// Create JSON wrapper from string
+    pub fn build(content: &str) -> Result<Json, DatafileError> {
         // Parse content as JSON
         let value = from_str(content)
             .into_report()

@@ -105,12 +105,17 @@ impl ClientBuilder<Empty> {
         // Create datafile from JSON value
         let datafile = Datafile::build(&mut json).change_context(ClientError::InvalidDatafile)?;
 
-        Ok(ClientBuilder {
+        Ok(self.with_native_datafile(datafile))
+    }
+
+    /// Use a native Datafile struct
+    pub fn with_native_datafile(self, datafile: Datafile) -> ClientBuilder<Ready> {
+        ClientBuilder {
             datafile: Some(datafile),
             state: PhantomData,
             #[cfg(feature = "online")]
             event_dispatcher: self.event_dispatcher,
-        })
+        }
     }
 }
 
