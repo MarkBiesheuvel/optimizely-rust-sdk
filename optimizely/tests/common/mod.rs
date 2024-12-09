@@ -34,6 +34,10 @@ pub(super) struct EventStore {
     decisions: DecisionList,
 }
 
+// Implement Send and Sync for EventStore
+unsafe impl Send for EventStore {}
+unsafe impl Sync for EventStore {}
+
 // Return a new reference counted point to the list
 impl EventStore {
     fn conversions(&self) -> ConversionList {

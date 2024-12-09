@@ -5,7 +5,7 @@ use crate::{client::UserContext, Conversion, Decision};
 ///
 /// It is possible to make a custom event dispatcher by implementing this trait
 /// TODO: add example again
-pub trait EventDispatcher {
+pub trait EventDispatcher: Send + Sync {
     /// Send conversion event to destination
     fn send_conversion_event(&self, user_context: &UserContext, conversion: Conversion);
 
