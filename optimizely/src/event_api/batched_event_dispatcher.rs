@@ -60,7 +60,11 @@ impl Default for BatchedEventDispatcher {
                 }
 
                 // Send payload if reached the batch threshold
-                if let Some(payload) = payload_option.take_if(|payload| payload.size() >= DEFAULT_BATCH_THRESHOLD) {
+                if payload_option
+                    .as_ref()
+                    .map_or(false, |payload| payload.size() >= DEFAULT_BATCH_THRESHOLD)
+                {
+                    let payload = payload_option.take().unwrap();
                     log::debug!("Reached DEFAULT_BATCH_THRESHOLD");
                     payload.send();
                 }
