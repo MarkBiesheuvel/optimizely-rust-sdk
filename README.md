@@ -1,13 +1,21 @@
 
-# Optimizely Feature Experimentation - Rust SDK
+# *Unofficial* Optimizely Rust SDK
 
-An **unofficial** Rust SDK for Optimizely Feature Experimentation.
+This repository houses an *unofficial* Rust SDK for use with Optimizely Feature Experimentation.
 
-This SDK is **not** supported by Optimizely!
+Optimizely Feature Experimentation is an A/B testing and feature management tool for product development teams that enables you to experiment at every step. Using Optimizely Feature Experimentation allows for every feature on your roadmap to be an opportunity to discover hidden insights. Learn more at [optimizely.com](https://www.optimizely.com/products/feature-experimentation/), or see the [developer documentation](https://docs.developers.optimizely.com/feature-experimentation/docs/introduction).
 
-This SDK only includes a small subset of features compared to supported SDKs. Use at own risk!
+## What does *unofficial* SDK mean?
 
-## Example
+This is a hobby project of a single employee at Optimizely. In other words, there is not a dedicated development team working on the SDK.
+
+The SDK does not include all of the features that is included by the official SDKs, such as the JavaScript SDK or Python SDK. A list of supported features is shown below.
+
+The Optimizely support team does not have experience with Rust and will not be able to help with any issues. If you run into a problem, you can create an issue via Github. There is no SLA for Github issues.
+
+## Code example
+
+This example shows how to initiate an SDK client and bucket a single user for a single feature flag.
 
 ```rust
 use optimizely::{event_api::BatchedEventDispatcher, Client};
@@ -30,9 +38,10 @@ let decision = user_context.decide(feature_flag);
 Ok::<(), Box<dyn std::error::Error>>(())
 ```
 
-## Included features
+## Supported features
 
-A list of the features that are currently included:
+All *checked* features are currently supported in the Rust SDK.
+All *unchecked* features are not supported in the Rust SDK, but are supported by all official SDKs.
 
 - [x] Initialize client from local datafile
 - [x] Initialize client from SDK key
