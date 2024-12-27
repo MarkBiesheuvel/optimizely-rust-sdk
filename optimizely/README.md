@@ -1,4 +1,3 @@
-
 # *Unofficial* Optimizely Rust SDK
 
 This repository houses an *unofficial* Rust SDK for use with Optimizely Feature Experimentation.
