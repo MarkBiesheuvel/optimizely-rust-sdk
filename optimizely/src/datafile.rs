@@ -36,74 +36,15 @@ mod variation;
 pub struct Datafile(Environment);
 
 impl Datafile {
+    /// Creates an empty Datafile struct
+    pub fn new<T: Into<String>>(account_id: T, revision: u32) -> Datafile {
+        Datafile(Environment::new(account_id, revision))
+    }
+
     /// Construct a new Datafile from a string containing a JSON document
     pub fn build(content: &str) -> Result<Datafile, DatafileError> {
         // Parse the JSON content via Serde into Rust structs
         let environment: Environment = serde_json::from_str(content).change_context(DatafileError::InvalidJson)?;
-    /// Creates an empty Datafile struct
-    pub fn new<T: Into<String>>(account_id: T, revision: u32) -> Datafile {
-        Datafile {
-            account_id: account_id.into(),
-            revision,
-            feature_flags: HashMap::new(),
-            #[cfg(feature = "online")]
-            events: HashMap::new(),
-        }
-    }
-
-    /// Create Datafile from JSON
-    pub fn build(json: &mut Json) -> Result<Datafile, DatafileError> {
-        // Get account_id as String
-        let account_id = json.get("accountId")?.as_string()?;
-
-        // Get revision as String, ...
-        let revision = json.get("revision")?.as_string()?;
-
-        // ... and parse as u32
-        let revision = revision
-            .parse()
-            .into_report()
-            .change_context(DatafileError::InvalidRevision(revision))?;
-
-        #[cfg(feature = "online")]
-        let events = json
-            .get("events")?
-            .as_array()?
-            .map(|mut json| Event::build(&mut json))
-            .collect::<Result<Vec<_>, _>>()?
-            .into_iter()
-            .map(|event| (event.key().to_owned(), event))
-            .collect::<HashMap<_, _>>();
-
-        // Get HashMap of Rollouts
-        let mut rollouts = json
-            .get("rollouts")?
-            .as_array()?
-            .map(|mut json| Rollout::build(&mut json))
-            .collect::<Result<Vec<_>, _>>()?
-            .into_iter()
-            .map(|rollout| (rollout.id().to_owned(), rollout))
-            .collect::<HashMap<_, _>>();
-
-        // Get HashMap of Experiments
-        let mut experiments = json
-            .get("experiments")?
-            .as_array()?
-            .map(|mut json| Experiment::build(&mut json))
-            .collect::<Result<Vec<_>, _>>()?
-            .into_iter()
-            .map(|experiment| (experiment.id().to_owned(), experiment))
-            .collect::<HashMap<_, _>>();
-
-        // // Get Vec of feature flags
-        let feature_flags = json
-            .get("featureFlags")?
-            .as_array()?
-            .map(|mut json| FeatureFlag::build(&mut json, &mut rollouts, &mut experiments))
-            .collect::<Result<Vec<_>, _>>()?
-            .into_iter()
-            .map(|flag| (flag.key().to_owned(), flag))
-            .collect::<HashMap<_, _>>();
 
         Ok(Datafile(environment))
     }

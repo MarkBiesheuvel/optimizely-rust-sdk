@@ -82,7 +82,8 @@ impl Client {
 }
 
 impl UninitializedClient {
-    pub(super) fn new(datafile: Datafile) -> UninitializedClient {
+    /// Directly create an unitialized client from a Datafile struct
+    pub fn new(datafile: Datafile) -> UninitializedClient {
         UninitializedClient {
             datafile,
             _default_decide_options: None,

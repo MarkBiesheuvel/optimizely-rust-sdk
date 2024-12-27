@@ -7,7 +7,7 @@ edition = "2021"
 syn = "2.0"
 quote = "1.0"
 proc-macro2 = "1.0"
-ureq = "2.5"
+ureq = "2.12"
 
 [dependencies.optimizely]
 path = "../optimizely"

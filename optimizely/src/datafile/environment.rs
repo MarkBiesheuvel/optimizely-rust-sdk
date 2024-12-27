@@ -39,6 +39,21 @@ where
 }
 
 impl Environment {
+    pub fn new<T: Into<String>>(account_id: T, revision: u32) -> Environment {
+        Environment {
+            account_id: account_id.into(),
+            project_id: String::new(),
+            revision: revision,
+            environment_key: String::new(),
+            bot_filtering: false,
+            anonymize_ip: false,
+            events: HashMap::new(),
+            experiments: HashMap::new(),
+            rollouts: HashMap::new(),
+            feature_flags: HashMap::new(),
+        }
+    }
+
     /// Getter for `account_id` field
     pub fn account_id(&self) -> &str {
         &self.account_id
