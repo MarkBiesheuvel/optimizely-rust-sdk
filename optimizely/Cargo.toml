@@ -31,3 +31,6 @@ features = ["v4", "fast-rng"]
 
 [features]
 online = ["dep:ureq"]
+
+[package.metadata.docs.rs]
+all-features = true
