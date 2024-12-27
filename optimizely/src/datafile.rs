@@ -1,41 +1,45 @@
 //! Parsing the Optimizely datafile
 
 // External imports
-use error_stack::{IntoReport, Result, ResultExt};
-use std::collections::HashMap;
+use error_stack::{Result, ResultExt};
 
 // Relative imports of sub modules
+use environment::Environment;
 pub use error::DatafileError;
-#[cfg(feature = "online")]
 pub(crate) use event::Event;
 pub(crate) use experiment::Experiment;
 pub(crate) use feature_flag::FeatureFlag;
-pub use json::Json;
-pub(crate) use rollout::Rollout;
-pub(crate) use traffic_allocation::TrafficAllocation;
+use rollout::Rollout;
+use traffic_allocation::TrafficAllocation;
 pub(crate) use variation::Variation;
 
+mod environment;
 mod error;
-#[cfg(feature = "online")]
 mod event;
 mod experiment;
 mod feature_flag;
-mod json;
 mod rollout;
 mod traffic_allocation;
 mod variation;
 
+/// The datafile contains all the feature flags, experiments, events and other configuration from an Optimizely account.
+///
+/// This configuration is stored in JSON format.
+/// A string containing this JSON format is used to build a `Datafile` struct.
+/// The `serde_json` library is used to parse the JSON string into an hierarchy of Rust structs.
+///
+/// While it is possible to perform zero-copy deserialization with `serde`, it would require to store an owned `String`
+/// containing the `content`.
+/// This would mean that a lot of memory would stay allocated for JSON syntax and unused properties.
+/// Instead the relevant fields are copied into their own `String`s.
 #[derive(Debug)]
-/// Contains all the settings, suchs as feature flags, events, and audiences
-pub struct Datafile {
-    account_id: String,
-    revision: u32,
-    feature_flags: HashMap<String, FeatureFlag>,
-    #[cfg(feature = "online")]
-    events: HashMap<String, Event>,
-}
+pub struct Datafile(Environment);
 
 impl Datafile {
+    /// Construct a new Datafile from a string containing a JSON document
+    pub fn build(content: &str) -> Result<Datafile, DatafileError> {
+        // Parse the JSON content via Serde into Rust structs
+        let environment: Environment = serde_json::from_str(content).change_context(DatafileError::InvalidJson)?;
     /// Creates an empty Datafile struct
     pub fn new<T: Into<String>>(account_id: T, revision: u32) -> Datafile {
         Datafile {
@@ -101,33 +105,36 @@ impl Datafile {
             .map(|flag| (flag.key().to_owned(), flag))
             .collect::<HashMap<_, _>>();
 
-        Ok(Datafile {
-            account_id,
-            revision,
-            feature_flags,
-            #[cfg(feature = "online")]
-            events,
-        })
+        Ok(Datafile(environment))
     }
 
-    /// Account ID of the datafile
+    /// Get the account ID
     pub fn account_id(&self) -> &str {
-        &self.account_id
+        self.0.account_id()
     }
 
-    /// Revision of the datafile
+    /// Get the revision of the datafile
     pub fn revision(&self) -> u32 {
-        self.revision
+        self.0.revision()
     }
 
-    /// Find a specific flag
-    pub fn get_flag(&self, flag_key: &str) -> Option<&FeatureFlag> {
-        self.feature_flags.get(flag_key)
+    /// Get the flag with the given key
+    pub fn flag(&self, flag_key: &str) -> Option<&FeatureFlag> {
+        self.0.feature_flags().get(flag_key)
     }
 
-    /// Find a specific event
-    #[cfg(feature = "online")]
-    pub fn get_event(&self, event_key: &str) -> Option<&Event> {
-        self.events.get(event_key)
+    /// Get the experiment with the given experiment ID
+    pub fn experiment(&self, experiment_id: &str) -> Option<&Experiment> {
+        self.0.experiments().get(experiment_id)
+    }
+
+    /// Get the rollout with the given rollout ID
+    pub fn rollout(&self, rollout_id: &str) -> Option<&Rollout> {
+        self.0.rollouts().get(rollout_id)
+    }
+
+    /// Get the event with the given key
+    pub fn event(&self, event_key: &str) -> Option<&Event> {
+        self.0.events().get(event_key)
     }
 }

@@ -1,8 +1,10 @@
 // External imports
 use serde::Serialize;
+use std::collections::HashMap;
 
 // Imports from super
-use super::{super::Event, Visitor};
+use super::Visitor;
+use crate::{event_api::EventApiClient, Conversion, Decision};
 
 // Information regarding the SDK client
 const CLIENT_NAME: &str = "rust-sdk";
@@ -35,47 +37,75 @@ impl Payload<'_> {
         }
     }
 
-    /// Add a decision/conversion event to the payload
-    pub fn add_event(&mut self, event: Event) {
-        if event.account_id() != self.account_id {
-            // TODO: return a Result instead
-            panic!("Trying to add event from other account");
-        }
+    /// Return the number of visitors in the payload
+    pub fn size(&self) -> usize {
+        self.visitors.len()
+    }
 
+    /// Add a conversion event for a specific visitor to the payload
+    pub fn add_conversion_event<T: Into<String>>(&mut self, user_id: T, conversion: &Conversion) {
+        log::debug!("Adding conversion event to payload");
         // TODO: look up visitor ID in existing list
 
-        // Retrieve existing visitor or insert new one
-        let mut visitor = Visitor::new(event.user_id());
+        // Create new request::Visitor
+        let mut visitor = Visitor::new(user_id);
 
-        match event {
-            Event::Decision {
-                campaign_id,
-                experiment_id,
-                variation_id,
-                ..
-            } => {
-                log::debug!("Adding decision event to log payload");
-
-                // Use a copy of campaign_id as entity_id
-                let entity_id = campaign_id.clone();
-
-                // Add decision to visitor
-                visitor.add_decision(campaign_id, experiment_id, variation_id);
-
-                // Add campaign_activated event
-                visitor.add_event(entity_id, String::from(ACTIVATE_EVENT_KEY));
-            }
-            Event::Conversion {
-                event_id, event_key, ..
-            } => {
-                log::debug!("Adding conversion event to log payload");
-
-                // Add custom event
-                visitor.add_event(event_id, event_key);
-            }
-        }
+        // Add custom event
+        visitor.add_event(conversion);
 
         // Add to the list
         self.visitors.push(visitor);
+    }
+
+    /// Add a decision event for a specific visitor to the payload
+    pub fn add_decision_event<T: Into<String>>(&mut self, user_id: T, decision: &Decision) {
+        log::debug!("Adding decision event to payload");
+        // TODO: look up visitor ID in existing list
+
+        // Create new request::Visitor
+        let mut visitor = Visitor::new(user_id);
+
+        // Use campaign_id as entity_id
+        let entity_id = decision.campaign_id();
+
+        // Add decision to visitor
+        visitor.add_decision(decision);
+
+        // Campaign activated event does not have tags or properties
+        let properties = HashMap::default();
+        let tags = HashMap::default();
+
+        // Add campaign_activated event
+        let conversion = Conversion::new(ACTIVATE_EVENT_KEY, entity_id, properties, tags);
+        visitor.add_event(&conversion);
+
+        // Add to the list
+        self.visitors.push(visitor);
+    }
+
+    /// Send entire payload
+    pub fn send(&self) {
+        // Sending payload
+        log::debug!("Sending request to Event API");
+
+        // Send payload to endpoint
+        match EventApiClient::send(self) {
+            Ok(_) => {
+                log::info!("Successfully sent request to Event API");
+            }
+            Err(report) => {
+                log::error!("Failed to send request to Event API");
+                log::error!("\n{report:?}");
+            }
+        }
+    }
+}
+
+impl Drop for Payload<'_> {
+    fn drop(&mut self) {
+        log::debug!("Dropping Payload");
+
+        // If the Payload is dropped, make one last request to the Event API
+        self.send()
     }
 }

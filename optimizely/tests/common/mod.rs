@@ -2,12 +2,10 @@
 #![allow(dead_code)]
 
 // External imports
-use std::cell::RefCell;
-use std::rc::Rc;
+use std::sync::{Arc, RwLock};
 
 // Imports from Optimizely crate
-use optimizely::client::{Client, ClientBuilder};
-use optimizely::event_api::{Event, EventDispatcher};
+use optimizely::{client::UserContext, event_api::EventDispatcher, Client, Conversion, Decision};
 
 // This is the account ID of mark.biesheuvel@optimizely.com
 pub const ACCOUNT_ID: &str = "21537940595";
@@ -22,26 +20,53 @@ pub const FILE_PATH: &str = "../datafiles/sandbox.json";
 // This is the revision number of the bundled datafile
 pub const REVISION: u32 = 73;
 
-// List of Events wrapped in a reference counted mutable memory location
-type EventList = Rc<RefCell<Vec<Event>>>;
+// In-memory thread-safe list of any type
+pub struct SyncList<T>(Arc<RwLock<Vec<T>>>);
 
-// Struct that holds the EventList and implement the EventDispatcher trait
-#[derive(Default)]
-pub(super) struct EventStore {
-    list: Rc<RefCell<Vec<Event>>>,
+impl<T> Default for SyncList<T> {
+    fn default() -> Self {
+        Self(Arc::new(RwLock::new(Vec::default())))
+    }
 }
 
-// Return a new reference counted point to the list
-impl EventStore {
-    fn list(&self) -> Rc<RefCell<Vec<Event>>> {
-        Rc::clone(&self.list)
+impl<T> SyncList<T> {
+    fn add(&self, item: T) {
+        // Acquire lock on the RwLock
+        if let Ok(mut vec) = self.0.write() {
+            // Add item to the list
+            vec.push(item);
+        } else {
+            // Error handling not implemented in this example
+        }
     }
+
+    pub fn len(&self) -> usize {
+        match self.0.read() {
+            Ok(vec) => vec.len(),
+            Err(_) => 0,
+        }
+    }
+
+    fn clone(&self) -> Self {
+        Self(self.0.clone())
+    }
+}
+
+// Struct that holds conversion and decisions in memory and implement the EventDispatcher trait
+#[derive(Default)]
+pub struct EventStore {
+    conversions: SyncList<Conversion>,
+    decisions: SyncList<Decision>,
 }
 
 // Implementing the EventDispatcher using the interior mutability pattern
 impl EventDispatcher for EventStore {
-    fn send_event(&self, event: Event) {
-        self.list.borrow_mut().push(event);
+    fn send_conversion_event(&self, _user_context: &UserContext, conversion: Conversion) {
+        self.conversions.add(conversion);
+    }
+
+    fn send_decision_event(&self, _user_context: &UserContext, decision: Decision) {
+        self.decisions.add(decision);
     }
 }
 
@@ -50,21 +75,28 @@ impl EventDispatcher for EventStore {
 // - a list of events that was send to the EventDispatcher
 pub struct TestContext {
     pub client: Client,
-    pub event_list: EventList,
+    pub conversions: SyncList<Conversion>,
+    pub decisions: SyncList<Decision>,
 }
 
-// A setup function used in mutliple tests
-pub(super) fn setup() -> TestContext {
+// A setup function used in multiple tests
+pub fn setup() -> TestContext {
     // Create a struct to store events
     let event_store = EventStore::default();
-    let event_list = event_store.list();
+
+    // Clone reference to the lists
+    let conversions = event_store.conversions.clone();
+    let decisions = event_store.decisions.clone();
 
     // Build client
-    let client = ClientBuilder::new()
-        .with_event_dispatcher(event_store)
-        .with_local_datafile(FILE_PATH)
+    let client = Client::from_local_datafile(FILE_PATH)
         .expect("local datafile should work")
-        .build();
+        .with_event_dispatcher(event_store)
+        .initialize();
 
-    TestContext { client, event_list }
+    TestContext {
+        client,
+        conversions,
+        decisions,
+    }
 }

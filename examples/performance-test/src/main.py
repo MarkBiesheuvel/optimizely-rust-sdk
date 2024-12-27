@@ -3,7 +3,7 @@ from optimizely.decision.optimizely_decide_option import OptimizelyDecideOption
 
 
 def datafile():
-    with open('../datafiles/sandbox.json', 'r') as file:
+    with open('../../datafiles/sandbox.json', 'r') as file:
         return file.read()
 
 

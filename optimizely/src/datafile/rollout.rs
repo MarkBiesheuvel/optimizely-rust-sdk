@@ -1,40 +1,36 @@
 // External imports
-use error_stack::Result;
+use serde::{Deserialize, Deserializer};
+use std::collections::HashMap;
 
 // Imports from super
-use super::{DatafileError, Experiment, Json};
+use super::Experiment;
 
-#[derive(Debug)]
+#[derive(Deserialize, Debug)]
 pub struct Rollout {
     id: String,
     experiments: Vec<Experiment>,
 }
 
 impl Rollout {
-    pub(crate) fn new<T: Into<String>>(id: T, experiments: Vec<Experiment>) -> Rollout {
-        Rollout {
-            id: id.into(),
-            experiments,
+    // Method to deserialize an array of Rollouts into a Hashmap of Rollouts
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<HashMap<String, Rollout>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let mut map = HashMap::new();
+        for rollout in Vec::<Rollout>::deserialize(deserializer)? {
+            map.insert(rollout.id.clone(), rollout);
         }
+        Ok(map)
     }
 
-    pub(crate) fn build(json: &mut Json) -> Result<Rollout, DatafileError> {
-        let id = json.get("id")?.as_string()?;
-
-        let experiments = json
-            .get("experiments")?
-            .as_array()?
-            .map(|mut json| Experiment::build(&mut json))
-            .collect::<Result<Vec<_>, _>>()?;
-
-        Ok(Rollout::new(id, experiments))
-    }
-
-    pub fn experiments(&self) -> &Vec<Experiment> {
-        &self.experiments
-    }
-
+    #[allow(dead_code)]
     pub fn id(&self) -> &str {
         &self.id
+    }
+
+    #[allow(dead_code)]
+    pub fn experiments(&self) -> &Vec<Experiment> {
+        &self.experiments
     }
 }

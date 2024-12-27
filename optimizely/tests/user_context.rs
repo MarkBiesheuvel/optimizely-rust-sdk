@@ -51,5 +51,5 @@ fn user_context_track_event() {
     user_context.track_event("purchase");
 
     // Assert that exactly one event is dispatched
-    assert_eq!(ctx.event_list.borrow().len(), 1);
+    assert_eq!(ctx.conversions.len(), 1);
 }

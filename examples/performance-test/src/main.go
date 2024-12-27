@@ -11,7 +11,7 @@ import (
 func main() {
     logging.SetLogLevel(logging.LogLevelError)
 
-    datafile, _ := os.ReadFile("../datafiles/sandbox.json")
+    datafile, _ := os.ReadFile("../../datafiles/sandbox.json")
 
     optimizelyFactory := &client.OptimizelyFactory{
         Datafile: datafile,

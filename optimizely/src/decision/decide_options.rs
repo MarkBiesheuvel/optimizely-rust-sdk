@@ -3,7 +3,7 @@ use std::default::Default;
 /// Options to specify for calls to any decide method
 ///
 /// ```
-/// use optimizely::ClientBuilder;
+/// use optimizely::Client;
 /// use optimizely::decision::DecideOptions;
 /// #
 /// # let file_path = "../datafiles/sandbox.json";
@@ -11,9 +11,8 @@ use std::default::Default;
 /// # let user_id = "123abc789xyz";
 ///
 /// // Initialize Optimizely client using local datafile
-/// let optimizely_client = ClientBuilder::new()
-///     .with_local_datafile(file_path)?
-///     .build();
+/// let optimizely_client = Client::from_local_datafile(file_path)?
+///     .initialize();
 ///
 /// // Create a user context
 /// let user_context = optimizely_client.create_user_context(user_id);

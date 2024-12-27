@@ -3,60 +3,71 @@ use std::sync::mpsc;
 use std::thread;
 
 // Imports from super
-use super::{Event, EventDispatcher};
+use super::{request::Payload, EventDispatcher};
 
-// Relative imports of sub modules
-use batched_payload::BatchedPayload;
+// Imports from crate
+use crate::{client::UserContext, Conversion, Decision};
 
-mod batched_payload;
+// Structure used to send message between threads
+struct ThreadMessage {
+    account_id: String,
+    user_id: String,
+    event: EventEnum,
+}
+enum EventEnum {
+    Conversion(Conversion),
+    Decision(Decision),
+}
 
-/// Implementation of the EventDisptacher trait that collects multiple events before sending them
+// Upper limit to number of events in a batch
+const DEFAULT_BATCH_THRESHOLD: usize = 10;
+
+/// Implementation of the EventDispatcher trait that collects multiple events before sending them
 ///
-/// ```
-/// use optimizely::event_api::{BatchedEventDispatcher, Event, EventDispatcher};
-///
-/// // Create some example IDs
-/// let account_id = "21537940595";
-/// let user_ids = vec!["user0", "user1", "user2"];
-/// let campaign_id = "9300000133039";
-/// let experiment_id = "9300000169122";
-/// let variation_ids = vec!["87757", "87757", "87755"];
-///
-/// // Create events from above IDs
-/// let events = user_ids.iter()
-///     .zip(variation_ids.iter())
-///     .map(|(user_id, variation_id)| {
-///         Event::decision(account_id, user_id, campaign_id, experiment_id, variation_id)
-///     });
-///
-/// // Create batched event disptacher
-/// let dispatcher = BatchedEventDispatcher::default();
-///
-/// // Send all events
-/// for event in events {
-///     dispatcher.send_event(event);
-/// }
-///
-/// // Note that only one request will be sent to the Event API
-/// ```
+/// TODO: add example usage in SDK
 ///
 /// Inspiration from [Spawn threads and join in destructor](https://users.rust-lang.org/t/spawn-threads-and-join-in-destructor/1613/9)
 pub struct BatchedEventDispatcher {
     thread_handle: Option<thread::JoinHandle<()>>,
-    transmitter: Option<mpsc::Sender<Event>>,
+    transmitter: Option<mpsc::Sender<ThreadMessage>>,
 }
 
 impl Default for BatchedEventDispatcher {
     /// Constructor for a new batched event dispatcher
     fn default() -> BatchedEventDispatcher {
-        let (transmitter, receiver) = mpsc::channel();
+        let (transmitter, receiver) = mpsc::channel::<ThreadMessage>();
 
+        // Receiver logic in separate thread
         let thread_handle = thread::spawn(move || {
-            let mut batched_payload = BatchedPayload::new();
+            let mut payload_option = Option::None;
 
-            // Keep receiving new message from the main thread
-            for event in receiver.iter() {
-                batched_payload.add_event(event);
+            // Keep receiving new messages from the main thread
+            for message in receiver.iter() {
+                // Deconstruct the message
+                let ThreadMessage {
+                    account_id,
+                    user_id,
+                    event,
+                } = message;
+
+                // Use existing payload or create new one
+                let payload = payload_option.get_or_insert_with(|| Payload::new(account_id));
+
+                // the corresponding event to the payload
+                match event {
+                    EventEnum::Conversion(conversion) => {
+                        payload.add_conversion_event(&user_id, &conversion);
+                    }
+                    EventEnum::Decision(decision) => {
+                        payload.add_decision_event(&user_id, &decision);
+                    }
+                }
+
+                // Send payload if reached the batch threshold
+                if let Some(payload) = payload_option.take_if(|payload| payload.size() >= DEFAULT_BATCH_THRESHOLD) {
+                    log::debug!("Reached DEFAULT_BATCH_THRESHOLD");
+                    payload.send();
+                }
             }
         });
 
@@ -86,10 +97,31 @@ impl Drop for BatchedEventDispatcher {
 }
 
 impl EventDispatcher for BatchedEventDispatcher {
-    fn send_event(&self, event: Event) {
-        // Send event to thread
+    fn send_conversion_event(&self, user_context: &UserContext, conversion: Conversion) {
+        self.transmit(user_context, EventEnum::Conversion(conversion))
+    }
+
+    fn send_decision_event(&self, user_context: &UserContext, decision: Decision) {
+        self.transmit(user_context, EventEnum::Decision(decision))
+    }
+}
+
+impl BatchedEventDispatcher {
+    fn transmit(&self, user_context: &UserContext, event: EventEnum) {
+        // Create a String so the value can be owned by the other thread.
+        let account_id = user_context.client().datafile().account_id().into();
+        let user_id = user_context.user_id().into();
+
+        // Build message
+        let message = ThreadMessage {
+            account_id,
+            user_id,
+            event,
+        };
+
+        // Send message to thread
         match &self.transmitter {
-            Some(tx) => match tx.send(event) {
+            Some(tx) => match tx.send(message) {
                 Ok(_) => {
                     log::debug!("Successfully sent message to thread");
                 }

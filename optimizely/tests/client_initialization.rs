@@ -1,5 +1,5 @@
 // Imports from Optimizely crate
-use optimizely::{client::ClientError, datafile::DatafileError, ClientBuilder};
+use optimizely::{client::ClientError, datafile::DatafileError, Client};
 
 // Relative imports of sub modules
 use common::{ACCOUNT_ID, FILE_PATH, REVISION};
@@ -11,10 +11,7 @@ fn with_invalid_json() {
     let json = "";
 
     // Get error report
-    let report = ClientBuilder::new()
-        .with_datafile_as_string(json)
-        .err()
-        .unwrap();
+    let report = Client::from_string(json).err().unwrap();
 
     // Verify the client error type
     let client_error = report.downcast_ref::<ClientError>().unwrap();
@@ -40,10 +37,7 @@ fn with_missing_properties() {
     }"#;
 
     // Get error report
-    let report = ClientBuilder::new()
-        .with_datafile_as_string(json)
-        .err()
-        .unwrap();
+    let report = Client::from_string(json).err().unwrap();
 
     // Verify the client error type
     let client_error = report.downcast_ref::<ClientError>().unwrap();
@@ -55,7 +49,7 @@ fn with_missing_properties() {
     // Verify the datafile error type
     let datafile_error = report.downcast_ref::<DatafileError>().unwrap();
     assert!(
-        matches!(datafile_error, DatafileError::KeyNotFound(_)),
+        matches!(datafile_error, DatafileError::InvalidJson),
         "Report did not include DatafileError::KeyNotFound"
     );
 }
@@ -74,10 +68,7 @@ fn with_invalid_array_properties() {
     }"#;
 
     // Get error report
-    let report = ClientBuilder::new()
-        .with_datafile_as_string(json.into())
-        .err()
-        .unwrap();
+    let report = Client::from_string(json.into()).err().unwrap();
 
     // Verify the client error type
     let client_error = report.downcast_ref::<ClientError>().unwrap();
@@ -89,7 +80,7 @@ fn with_invalid_array_properties() {
     // Verify the datafile error type
     let datafile_error = report.downcast_ref::<DatafileError>().unwrap();
     assert!(
-        matches!(datafile_error, DatafileError::InvalidType(_)),
+        matches!(datafile_error, DatafileError::InvalidJson),
         "Report did not include DatafileError::InvalidType"
     );
 }
@@ -97,29 +88,27 @@ fn with_invalid_array_properties() {
 #[test]
 #[cfg(feature = "online")]
 fn with_sdk_key() {
-    let client = ClientBuilder::new()
-        .with_sdk_key(common::SDK_KEY)
+    let client = Client::from_sdk_key(common::SDK_KEY)
         .expect("sdk key should work")
-        .build();
+        .initialize();
 
     // Check account id property on client
-    assert_eq!(client.account_id(), ACCOUNT_ID);
+    assert_eq!(client.datafile().account_id(), ACCOUNT_ID);
 
     // Check revision property on client
     // NOTE: the online datafile might have been updated
-    assert!(client.revision() >= REVISION);
+    assert!(client.datafile().revision() >= REVISION);
 }
 
 #[test]
 fn with_fixed_datafile() {
-    let client = ClientBuilder::new()
-        .with_local_datafile(FILE_PATH)
+    let client = Client::from_local_datafile(FILE_PATH)
         .expect("local datafile should work")
-        .build();
+        .initialize();
 
     // Check account id property on client
-    assert_eq!(client.account_id(), ACCOUNT_ID);
+    assert_eq!(client.datafile().account_id(), ACCOUNT_ID);
 
     // Check revision property on client
-    assert_eq!(client.revision(), REVISION);
+    assert_eq!(client.datafile().revision(), REVISION);
 }

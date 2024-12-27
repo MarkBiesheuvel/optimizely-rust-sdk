@@ -1,27 +1,10 @@
 // Imports from super
-use super::{request::Payload, Event, EventApiClient, EventDispatcher};
+use super::{request::Payload, EventDispatcher};
+use crate::{client::UserContext, Conversion, Decision};
 
-/// Implementation of the EventDisptacher trait that makes an HTTP request for every event
+/// Implementation of the EventDispatcher trait that makes an HTTP request for every event
 ///
-/// ```
-/// use optimizely::event_api::{Event, EventDispatcher, SimpleEventDispatcher};
-///
-/// // Create some example IDs
-/// let account_id = "21537940595";
-/// let user_id = "user0";
-/// let campaign_id = "9300000133039";
-/// let experiment_id = "9300000169122";
-/// let variation_id = "87757";
-///
-/// // Create new event from above IDs
-/// let event = Event::decision(account_id, user_id, campaign_id, experiment_id, variation_id);
-///
-/// // Create simple event disptacher
-/// let dispatcher = SimpleEventDispatcher::default();
-///
-/// // Send single event
-/// dispatcher.send_event(event);
-/// ```
+/// TODO: add example usage in SDK
 pub struct SimpleEventDispatcher {}
 
 impl Default for SimpleEventDispatcher {
@@ -32,24 +15,29 @@ impl Default for SimpleEventDispatcher {
 }
 
 impl EventDispatcher for SimpleEventDispatcher {
-    fn send_event(&self, event: Event) {
-        log::debug!("Sending log payload to Event API");
+    fn send_conversion_event(&self, user_context: &UserContext, conversion: Conversion) {
+        log::debug!("Sending conversion event to Event API");
 
         // Generate a new payload
-        let mut payload = Payload::new(event.account_id());
+        let mut payload = Payload::new(user_context.client().datafile().account_id());
+
+        // Add single conversion
+        payload.add_conversion_event(user_context.user_id(), &conversion);
+
+        // Dispatch single conversion
+        payload.send()
+    }
+
+    fn send_decision_event(&self, user_context: &UserContext, decision: Decision) {
+        log::debug!("Sending decision event to Event API");
+
+        // Generate a new payload
+        let mut payload = Payload::new(user_context.client().datafile().account_id());
 
         // Add single decision
-        payload.add_event(event);
+        payload.add_decision_event(user_context.user_id(), &decision);
 
-        // And send
-        match EventApiClient::send(payload) {
-            Ok(_) => {
-                log::info!("Succesfull request to Event API");
-            }
-            Err(report) => {
-                log::error!("Failed request to Event API");
-                log::error!("\n{report:?}");
-            }
-        }
+        // Dispatch single decision
+        payload.send()
     }
 }

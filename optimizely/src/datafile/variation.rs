@@ -1,8 +1,6 @@
 // External imports
-use error_stack::Result;
-
-// Imports from super
-use super::{DatafileError, Json};
+use serde::{Deserialize, Deserializer};
+use std::collections::HashMap;
 
 /// A single variation like "off", "on" or other user-created variations.
 ///
@@ -11,63 +9,44 @@ use super::{DatafileError, Json};
 /// The `key` is a human-readable value.
 /// The value of `is_feature_enabled` is `false` for the "off" variation.
 /// All other variations will have `is_feature_enabled` is `true`.
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Deserialize)]
 pub struct Variation {
+    #[serde()]
     id: String,
+    #[serde()]
     key: String,
+    #[serde(rename = "featureEnabled")]
     is_feature_enabled: bool,
 }
 
 impl Variation {
-    // Create a new variation
-    pub(crate) fn new<T: Into<String>>(id: T, key: T, is_feature_enabled: bool) -> Variation {
-        Variation {
-            id: id.into(),
-            key: key.into(),
-            is_feature_enabled,
+    // Method to deserialize an array of Variations into a Hashmap of Variations
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<HashMap<String, Variation>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let mut map = HashMap::new();
+        for variation in Vec::<Variation>::deserialize(deserializer)? {
+            map.insert(variation.id.clone(), variation);
         }
-    }
-
-    /// Create a new variation from a JSON value.
-    pub(crate) fn build(json: &mut Json) -> Result<Variation, DatafileError> {
-        // Get variation_id as String
-        let id = json.get("id")?.as_string()?;
-
-        // Get variation_key as String
-        let key = json.get("key")?.as_string()?;
-
-        // TODO: fix bug below again
-        // BUG: Found an example datafile where this field is missing, therefore default to `false`
-        let is_feature_enabled = json.get("featureEnabled")?.as_boolean()?;
-
-        Ok(Variation::new(id, key, is_feature_enabled))
+        Ok(map)
     }
 
     /// Getter for `id` field
+    #[allow(dead_code)]
     pub fn id(&self) -> &str {
         &self.id
     }
 
     /// Getter for `key` field
+    #[allow(dead_code)]
     pub fn key(&self) -> &str {
         &self.key
     }
 
     /// Getter for `is_feature_enabled` field
+    #[allow(dead_code)]
     pub fn is_feature_enabled(&self) -> bool {
         self.is_feature_enabled
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn create_simple_variation() {
-        let variation = Variation::new("1234", "on", true);
-
-        assert!(variation.is_feature_enabled());
-        assert_eq!(variation.key(), "on");
     }
 }

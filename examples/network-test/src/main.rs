@@ -1,7 +1,7 @@
-use optimizely::{ClientBuilder, event_api::BatchedEventDispatcher};
-use std::error::Error;
 use env_logger::Target;
 use log::LevelFilter;
+use optimizely::{event_api::BatchedEventDispatcher, Client};
+use std::error::Error;
 
 const SDK_KEY: &str = "KVpGWnzPGKvvQ8yeEWmJZ";
 
@@ -13,11 +13,10 @@ fn main() -> Result<(), Box<dyn Error>> {
         .init();
 
     // Initiate client using SDK key and batched event dispatcher
-    let client = ClientBuilder::new()
-        .with_sdk_key(SDK_KEY)?
+    let client = Client::from_sdk_key(SDK_KEY)?
         .with_event_dispatcher(BatchedEventDispatcher::default())
-        .build();
-    
+        .initialize();
+
     let flag_key = "buy_button";
 
     for i in 0..20 {

@@ -1,6 +1,8 @@
 // External imports
 use serde::Serialize;
 
+use crate::{Conversion, Decision};
+
 // Imports from super
 use super::Snapshot;
 
@@ -19,11 +21,11 @@ impl Visitor {
         }
     }
 
-    pub fn add_decision(&mut self, campaign_id: String, experiment_id: String, variation_id: String) {
-        self.snapshots[0].add_decision(campaign_id, experiment_id, variation_id);
+    pub fn add_decision(&mut self, decision: &Decision) {
+        self.snapshots[0].add_decision(decision);
     }
 
-    pub fn add_event(&mut self, entity_id: String, event_key: String) {
-        self.snapshots[0].add_event(entity_id, event_key);
+    pub fn add_event(&mut self, conversion: &Conversion) {
+        self.snapshots[0].add_event(conversion);
     }
 }

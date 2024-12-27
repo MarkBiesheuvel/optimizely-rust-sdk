@@ -1,14 +1,11 @@
-use optimizely::{ClientBuilder, decision::DecideOptions};
+use optimizely::{decision::DecideOptions, Client};
 use std::error::Error;
 
-const FILE_PATH: &str = "../datafiles/sandbox.json";
+const FILE_PATH: &str = "../../datafiles/sandbox.json";
+const FLAG_KEY: &str = "buy_button";
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let client = ClientBuilder::new()
-        .with_local_datafile(FILE_PATH)?
-        .build();
-
-    let flag_key = "buy_button";
+    let client = Client::from_local_datafile(FILE_PATH)?.initialize();
 
     // Do not send any decision events during performance testing
     let decide_options = DecideOptions {
@@ -19,7 +16,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     for i in 0..1_000_000 {
         let user_id = format!("user{}", i);
         let user_context = client.create_user_context(&user_id);
-        let _decision = user_context.decide_with_options(flag_key, &decide_options);
+        let _decision = user_context.decide_with_options(FLAG_KEY, &decide_options);
     }
 
     Ok(())

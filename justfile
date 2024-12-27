@@ -12,7 +12,10 @@ test:
   just docs
 
 fmt:
-  rustfmt **/*.rs
+  cargo fmt --all
+
+dry-run-publish:
+  cargo publish --dry-run --allow-dirty -p optimizely
 
 run example:
   cd examples/{{example}} && cargo run

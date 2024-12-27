@@ -1,53 +1,36 @@
 // External imports
-use error_stack::Result;
+use serde::{Deserialize, Deserializer};
 use std::collections::HashMap;
-use std::rc::Rc;
 
 // Imports from super
-use super::{DatafileError, Json, TrafficAllocation, Variation};
+use super::{TrafficAllocation, Variation};
 
-/// Optimizely experiment
-#[derive(Debug, Default)]
+#[derive(Deserialize, Debug)]
 pub struct Experiment {
+    #[serde()]
     id: String,
+    #[serde(rename = "layerId")]
     campaign_id: String,
+    #[serde(rename = "trafficAllocation", deserialize_with = "TrafficAllocation::deserialize")]
     traffic_allocation: TrafficAllocation,
+    #[serde(rename = "variations", deserialize_with = "Variation::deserialize")]
+    variations: HashMap<String, Variation>,
 }
 
 impl Experiment {
-    pub(crate) fn new<T: Into<String>>(id: T, campaign_id: T, traffic_allocation: TrafficAllocation) -> Experiment {
-        Experiment {
-            id: id.into(),
-            campaign_id: campaign_id.into(),
-            traffic_allocation,
+    // Method to deserialize an array of Experiments into a Hashmap of Experiments
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<HashMap<String, Experiment>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let mut map = HashMap::new();
+        for experiment in Vec::<Experiment>::deserialize(deserializer)? {
+            map.insert(experiment.id.clone(), experiment);
         }
+        Ok(map)
     }
 
-    pub(crate) fn build(json: &mut Json) -> Result<Experiment, DatafileError> {
-        // Get fields as string
-        let id = json.get("id")?.as_string()?;
-
-        let campaign_id = json.get("layerId")?.as_string()?;
-
-        // TODO: retrieve key
-        // TODO: retrieve status and handle different values for status
-
-        // Create map of all variation so they can be looked up within TrafficAllocation
-        let mut variations = json
-            .get("variations")?
-            .as_array()?
-            .map(|mut json| Variation::build(&mut json))
-            .collect::<Result<Vec<_>, _>>()?
-            .into_iter()
-            .map(|variation| (variation.id().to_owned(), Rc::new(variation)))
-            .collect::<HashMap<_, _>>();
-
-        // Build TrafficAllocation struct
-        let traffic_allocation = TrafficAllocation::build(json, &mut variations)?;
-
-        Ok(Experiment::new(id, campaign_id, traffic_allocation))
-    }
-
+    #[allow(dead_code)]
     pub fn id(&self) -> &str {
         &self.id
     }
@@ -57,7 +40,12 @@ impl Experiment {
         &self.campaign_id
     }
 
+    #[allow(dead_code)]
     pub fn traffic_allocation(&self) -> &TrafficAllocation {
         &self.traffic_allocation
+    }
+
+    pub fn variation(&self, variation_id: &str) -> Option<&Variation> {
+        self.variations.get(variation_id)
     }
 }

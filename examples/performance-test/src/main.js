@@ -1,7 +1,7 @@
 const optimizely = require('@optimizely/optimizely-sdk');
 const fs = require('fs');
 
-const datafile = fs.readFileSync('../datafiles/sandbox.json', 'utf8');
+const datafile = fs.readFileSync('../../datafiles/sandbox.json', 'utf8');
 
 const client = optimizely.createInstance({
     datafile,
