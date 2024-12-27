@@ -1,13 +1,15 @@
-#![doc = include_str!("../../README.md")]
+#![doc = include_str!("../README.md")]
 #![warn(missing_docs)]
 
 // Reimport/export of structs to make them available at top-level
 pub use client::Client;
+#[cfg(feature = "online")]
 pub use conversion::Conversion;
 pub use decision::Decision;
 
 // Regular modules
 pub mod client;
+#[cfg(feature = "online")]
 pub mod conversion;
 pub mod datafile;
 pub mod decision;

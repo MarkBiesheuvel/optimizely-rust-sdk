@@ -8,7 +8,6 @@ description = "An unofficial Rust SDK for Optimizely Feature Experimentation"
 readme = "README.md"
 repository = "https://github.com/MarkBiesheuvel/optimizely-rust-sdk"
 license = "Apache-2.0"
-publish = ["optimizely"]
 keywords = ["optimizely", "experimentation", "feature-flagging"]
 
 [dependencies]

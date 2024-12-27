@@ -3,6 +3,7 @@ use murmur3::murmur3_32 as murmur3_hash;
 use std::collections::HashMap;
 
 // Imports from crate
+#[cfg(feature = "online")]
 use crate::conversion::Conversion;
 use crate::datafile::{Experiment, FeatureFlag, Variation};
 use crate::decision::{DecideOptions, Decision};
