@@ -1,7 +1,14 @@
 [package]
 name = "optimizely"
+authors = ["Mark Biesheuvel <mark.biesheuvel@optimizely.com>"]
 version = "0.4.0"
 edition = "2021"
+rust-version = "1.83"
+description = "An unofficial Rust SDK for Optimizely Feature Experimentation"
+readme = "../README.md"
+repository = "https://github.com/MarkBiesheuvel/optimizely-rust-sdk"
+license = "Apache-2.0"
+keywords = ["optimizely", "experimentation", "feature-flagging"]
 
 [dependencies]
 serde_json = "1.0"
