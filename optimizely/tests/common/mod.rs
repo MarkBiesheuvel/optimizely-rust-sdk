@@ -18,7 +18,7 @@ pub const SDK_KEY: &str = "KVpGWnzPGKvvQ8yeEWmJZ";
 pub const FILE_PATH: &str = "../datafiles/sandbox.json";
 
 // This is the revision number of the bundled datafile
-pub const REVISION: u32 = 73;
+pub const REVISION: u32 = 544;
 
 // In-memory thread-safe list of any type
 pub struct SyncList<T>(Arc<RwLock<Vec<T>>>);
