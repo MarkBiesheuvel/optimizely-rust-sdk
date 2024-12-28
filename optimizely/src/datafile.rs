@@ -4,6 +4,7 @@
 use error_stack::{Result, ResultExt};
 
 // Relative imports of sub modules
+use attribute::Attribute;
 use environment::Environment;
 pub use error::DatafileError;
 pub(crate) use event::Event;
@@ -13,6 +14,7 @@ use rollout::Rollout;
 use traffic_allocation::TrafficAllocation;
 pub(crate) use variation::Variation;
 
+mod attribute;
 mod environment;
 mod error;
 mod event;
