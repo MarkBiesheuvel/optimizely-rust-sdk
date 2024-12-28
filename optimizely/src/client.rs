@@ -8,11 +8,13 @@ use crate::event_api::EventDispatcher;
 // Relative imports of sub modules
 pub use error::ClientError;
 pub use initialization::UninitializedClient;
-pub use user::{UserAttributes, UserContext};
+pub use user_attribute::UserAttribute;
+pub use user_context::UserContext;
 
 mod error;
 mod initialization;
-mod user;
+mod user_attribute;
+mod user_context;
 
 /// SDK client to use Optimizely Feature Experimentation
 ///
@@ -42,18 +44,15 @@ pub struct Client {
 impl Client {
     /// Create a new user context for a given user id
     pub fn create_user_context<'a>(&'a self, user_id: &'a str) -> UserContext<'a> {
-        // Create an empty set of user attributes
-        let attributes = UserAttributes::new();
-
-        UserContext::new(self, user_id, attributes)
+        UserContext::new(self, user_id)
     }
 
-    /// Create a new user context for a given user id
-    pub fn create_user_context_with_attributes<'a>(
-        &'a self, user_id: &'a str, attributes: UserAttributes,
-    ) -> UserContext<'a> {
-        UserContext::new(self, user_id, attributes)
-    }
+    // /// Create a new user context for a given user id
+    // pub fn create_user_context_with_attributes<'a>(
+    //     &'a self, user_id: &'a str, attributes: UserAttributes,
+    // ) -> UserContext<'a> {
+    //     UserContext::new(self, user_id, attributes)
+    // }
 
     /// Get the datafile within the client
     pub fn datafile(&self) -> &Datafile {

@@ -9,10 +9,7 @@ use crate::datafile::{Experiment, FeatureFlag, Variation};
 use crate::decision::{DecideOptions, Decision};
 
 // Imports from super
-use super::Client;
-
-/// Custom type alias for user attributes
-pub type UserAttributes = HashMap<String, String>;
+use super::{Client, UserAttribute};
 
 /// Constant used for the hashing algorithm
 const HASH_SEED: u32 = 1;
@@ -37,10 +34,6 @@ const MAX_OF_RANGE: f64 = 10_000_f64;
 /// };
 ///
 /// // Create a user context
-/// let attributes = optimizely::user_attributes! {
-///     "is_employee" => "true",
-///     "app_version" => "1.3.2",
-/// };
 /// let user_context = optimizely_client.create_user_context("123abc789xyz");
 ///
 /// // Decide a feature flag for this user
@@ -51,16 +44,16 @@ const MAX_OF_RANGE: f64 = 10_000_f64;
 pub struct UserContext<'a> {
     client: &'a Client,
     user_id: &'a str,
-    attributes: UserAttributes,
+    user_attributes: HashMap<String, UserAttribute>,
 }
 
 impl UserContext<'_> {
     // Only allow UserContext to be constructed from a Client
-    pub(crate) fn new<'a>(client: &'a Client, user_id: &'a str, attributes: UserAttributes) -> UserContext<'a> {
+    pub(crate) fn new<'a>(client: &'a Client, user_id: &'a str) -> UserContext<'a> {
         UserContext {
             client,
             user_id,
-            attributes,
+            user_attributes: HashMap::new()
         }
     }
 
@@ -70,8 +63,18 @@ impl UserContext<'_> {
         let key = key.into();
         let value = value.into();
 
-        // Add the attribute
-        self.attributes.insert(key, value);
+        match self.client.datafile().attribute(&key) {
+            Some(attribute) => {
+                // Create user attribute by adding a value to a (datafile) attribute
+                let user_attribute = UserAttribute::from((attribute, value));
+                self.user_attributes.insert(key, user_attribute);
+            },
+            None => {
+                // Attribute key not found
+                log::warn!("Attribute key does not exist in datafile");
+            }
+        }
+
     }
 
     /// Get the client instance
@@ -85,9 +88,8 @@ impl UserContext<'_> {
     }
 
     /// Get all attributes of a user
-    pub fn attributes(&self) -> &UserAttributes {
-        // Return borrowed reference to attributes
-        &self.attributes
+    pub fn user_attributes(&self) -> Vec<&UserAttribute> {
+        self.user_attributes.values().collect()
     }
 
     #[cfg(feature = "online")]
@@ -245,20 +247,4 @@ impl UserContext<'_> {
             .map(|variation| Some((experiment, variation)))
             .flatten()
     }
-}
-
-/// Macro to create UserAttributes
-#[macro_export]
-macro_rules! user_attributes {
-    { $( $key: expr => $value: expr),* $(,)?} => {
-        {
-            let mut attribute = optimizely::client::UserAttributes::new();
-
-            $(
-                attribute.insert($key.into(), $value.into());
-            )*
-
-            attribute
-        }
-    };
 }

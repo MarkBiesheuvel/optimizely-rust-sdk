@@ -87,4 +87,8 @@ impl Environment {
     pub fn events(&self) -> &HashMap<String, Event> {
         &self.events
     }
+
+    pub fn attributes(&self) -> &HashMap<String, Attribute> {
+        &self.attributes
+    }
 }

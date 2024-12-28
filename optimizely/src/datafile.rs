@@ -4,7 +4,7 @@
 use error_stack::{Result, ResultExt};
 
 // Relative imports of sub modules
-use attribute::Attribute;
+pub(crate) use attribute::Attribute;
 use environment::Environment;
 pub use error::DatafileError;
 pub(crate) use event::Event;
@@ -74,5 +74,10 @@ impl Datafile {
     /// Get the event with the given key
     pub fn event(&self, event_key: &str) -> Option<&Event> {
         self.0.events().get(event_key)
+    }
+
+    /// Get the attribute with the given key
+    pub fn attribute(&self, attribute_key: &str) -> Option<&Attribute> {
+        self.0.attributes().get(attribute_key)
     }
 }
