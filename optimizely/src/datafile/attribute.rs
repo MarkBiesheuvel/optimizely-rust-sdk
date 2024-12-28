@@ -9,14 +9,14 @@ pub struct Attribute {
 }
 
 impl Attribute {
-    // Method to deserialize an array of Events into a Hashmap of Events
+    // Method to deserialize an array of Attributes into a Hashmap of Attributes
     pub fn deserialize<'de, D>(deserializer: D) -> Result<HashMap<String, Attribute>, D::Error>
     where
         D: Deserializer<'de>,
     {
         let mut map = HashMap::new();
-        for event in Vec::<Attribute>::deserialize(deserializer)? {
-            map.insert(event.key.clone(), event);
+        for attribute in Vec::<Attribute>::deserialize(deserializer)? {
+            map.insert(attribute.key.clone(), attribute);
         }
         Ok(map)
     }

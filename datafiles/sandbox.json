@@ -111,6 +111,11 @@
       "name": "iOS users"
     },
     {
+      "name": "One of each match type",
+      "conditions": "[\"or\", {\"match\": \"exact\", \"name\": \"$opt_dummy_attribute\", \"type\": \"custom_attribute\", \"value\": \"$opt_dummy_value\"}]",
+      "id": "6752016735666176"
+    },
+    {
       "id": "$opt_dummy_audience",
       "name": "Optimizely-Generated Audience for Backwards Compatibility",
       "conditions": "[\"or\", {\"match\": \"exact\", \"name\": \"$opt_dummy_attribute\", \"type\": \"custom_attribute\", \"value\": \"$opt_dummy_value\"}]"
@@ -123,19 +128,19 @@
       "id": "21687330054",
       "experimentIds": [
         "9300000125242",
-        "9300000061857",
-        "9300000090374"
+        "9300000090374",
+        "9300000061857"
       ],
       "key": "subscribe"
     },
     {
       "id": "22305150298",
       "experimentIds": [
-        "9300001497679",
-        "9300000242981",
         "9300000358644",
-        "9300000127039",
-        "9300000403726"
+        "9300000403726",
+        "9300000242981",
+        "9300001497679",
+        "9300000127039"
       ],
       "key": "purchase"
     },
@@ -184,9 +189,10 @@
     {
       "id": "24762711285",
       "experimentIds": [
+        "9300001956177",
         "9300001497679",
-        "9300000358652",
-        "9300000358651"
+        "9300000358651",
+        "9300000358652"
       ],
       "key": "add_to_cart"
     },
@@ -769,6 +775,34 @@
       ]
     },
     {
+      "id": "9300001956177",
+      "key": "one_of_each_match_type_experiment",
+      "status": "Running",
+      "layerId": "9300001347065",
+      "variations": [
+        {
+          "id": "320181",
+          "key": "off",
+          "featureEnabled": false,
+          "variables": []
+        }
+      ],
+      "trafficAllocation": [
+        {
+          "entityId": "320181",
+          "endOfRange": 10000
+        }
+      ],
+      "forcedVariations": {},
+      "audienceIds": [
+        "6752016735666176"
+      ],
+      "audienceConditions": [
+        "or",
+        "6752016735666176"
+      ]
+    },
+    {
       "id": "9300001497679",
       "key": "results_demo_experiment",
       "status": "Running",
@@ -975,7 +1009,8 @@
       "rolloutId": "rollout-100684-21533480907",
       "experimentIds": [
         "9300000358651",
-        "9300000358652"
+        "9300000358652",
+        "9300001956177"
       ],
       "variables": [
         {
@@ -1026,7 +1061,7 @@
   "groups": [],
   "integrations": [],
   "projectId": "21537940595",
-  "revision": "544",
+  "revision": "547",
   "rollouts": [
     {
       "id": "rollout-15415-21533480907",
@@ -1726,6 +1761,133 @@
         ]
       ],
       "id": "24662490048"
+    },
+    {
+      "name": "One of each match type",
+      "conditions": [
+        "and",
+        [
+          "or",
+          [
+            "or",
+            {
+              "match": "semver_ge",
+              "name": "app_version",
+              "type": "custom_attribute",
+              "value": "0.4.0"
+            },
+            {
+              "match": "semver_lt",
+              "name": "app_version",
+              "type": "custom_attribute",
+              "value": "0.0.0"
+            },
+            {
+              "match": "semver_le",
+              "name": "app_version",
+              "type": "custom_attribute",
+              "value": "0.0.0"
+            },
+            {
+              "match": "semver_eq",
+              "name": "app_version",
+              "type": "custom_attribute",
+              "value": "0.4.0"
+            },
+            {
+              "match": "semver_gt",
+              "name": "app_version",
+              "type": "custom_attribute",
+              "value": "0.4.0"
+            }
+          ]
+        ],
+        [
+          "or",
+          [
+            "or",
+            {
+              "match": "substring",
+              "name": "auth-status",
+              "type": "custom_attribute",
+              "value": "admin"
+            },
+            {
+              "match": "exact",
+              "name": "auth-status",
+              "type": "custom_attribute",
+              "value": "logged-in"
+            }
+          ]
+        ],
+        [
+          "or",
+          [
+            "or",
+            {
+              "match": "exact",
+              "name": "is_employee",
+              "type": "custom_attribute",
+              "value": true
+            },
+            {
+              "match": "exact",
+              "name": "is_employee",
+              "type": "custom_attribute",
+              "value": false
+            }
+          ]
+        ],
+        [
+          "or",
+          [
+            "or",
+            {
+              "match": "lt",
+              "name": "life_time_spend",
+              "type": "custom_attribute",
+              "value": 0
+            },
+            {
+              "match": "le",
+              "name": "life_time_spend",
+              "type": "custom_attribute",
+              "value": 0
+            },
+            {
+              "match": "exact",
+              "name": "life_time_spend",
+              "type": "custom_attribute",
+              "value": 0
+            },
+            {
+              "match": "gt",
+              "name": "life_time_spend",
+              "type": "custom_attribute",
+              "value": 0
+            },
+            {
+              "match": "ge",
+              "name": "life_time_spend",
+              "type": "custom_attribute",
+              "value": 0
+            }
+          ]
+        ],
+        [
+          "or",
+          [
+            "or",
+            {
+              "match": "exists",
+              "name": "view_type",
+              "type": "custom_attribute",
+              "value": null
+            }
+          ]
+        ]
+      ],
+      "id": "6752016735666176"
     }
   ],
   "variables": [],

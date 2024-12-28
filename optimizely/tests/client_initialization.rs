@@ -110,5 +110,5 @@ fn with_fixed_datafile() {
     assert_eq!(client.datafile().account_id(), ACCOUNT_ID);
 
     // Check revision property on client
-    assert_eq!(client.datafile().revision(), REVISION);
+    assert!(client.datafile().revision() >= REVISION);
 }

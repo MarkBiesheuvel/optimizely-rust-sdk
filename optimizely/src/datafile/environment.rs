@@ -3,7 +3,7 @@ use serde::{Deserialize, Deserializer};
 use std::collections::HashMap;
 
 // Imports from super
-use super::{Attribute, Event, Experiment, FeatureFlag, Rollout};
+use super::{Attribute, Audience, Event, Experiment, FeatureFlag, Rollout};
 
 #[derive(Deserialize, Debug)]
 pub struct Environment {
@@ -24,6 +24,9 @@ pub struct Environment {
     #[serde(deserialize_with = "Attribute::deserialize")]
     #[allow(dead_code)]
     attributes: HashMap<String, Attribute>,
+    #[serde(rename = "typedAudiences", deserialize_with = "Audience::deserialize")]
+    #[allow(dead_code)]
+    audiences: HashMap<String, Audience>,
     #[serde(deserialize_with = "Experiment::deserialize")]
     experiments: HashMap<String, Experiment>,
     #[serde(deserialize_with = "Rollout::deserialize")]
