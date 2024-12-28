@@ -3,10 +3,10 @@ use std::sync::mpsc;
 use std::thread;
 
 // Imports from super
-use super::request::{Payload, Visitor};
 use super::EventDispatcher;
 
 // Imports from crate
+use crate::event_api::request::{Payload, Visitor};
 use crate::{client::UserContext, Conversion, Decision};
 
 // Structure used to send message between threads

@@ -1,8 +1,8 @@
 // Imports from super
-use super::{
-    request::{Payload, Visitor},
-    EventDispatcher,
-};
+use super::EventDispatcher;
+
+// Imports from crate
+use crate::event_api::request::{Payload, Visitor};
 use crate::{client::UserContext, Conversion, Decision};
 
 /// Implementation of the EventDispatcher trait that makes an HTTP request for every event

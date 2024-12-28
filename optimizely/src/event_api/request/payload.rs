@@ -4,7 +4,7 @@ use std::collections::HashMap;
 
 // Imports from super
 use super::Visitor;
-use crate::{event_api::EventApiClient, Conversion, Decision};
+use crate::{Conversion, Decision};
 
 // Information regarding the SDK client
 const CLIENT_NAME: &str = "rust-sdk";
@@ -73,23 +73,6 @@ impl Payload<'_> {
 
         // Add to the list
         self.visitors.push(visitor);
-    }
-
-    /// Send entire payload
-    pub fn send(&self) {
-        // Sending payload
-        log::debug!("Sending request to Event API");
-
-        // Send payload to endpoint
-        match EventApiClient::send(self) {
-            Ok(_) => {
-                log::info!("Successfully sent request to Event API");
-            }
-            Err(report) => {
-                log::error!("Failed to send request to Event API");
-                log::error!("\n{report:?}");
-            }
-        }
     }
 }
 
