@@ -1,5 +1,8 @@
 // Imports from super
-use super::{request::Payload, EventDispatcher};
+use super::{
+    request::{Payload, Visitor},
+    EventDispatcher,
+};
 use crate::{client::UserContext, Conversion, Decision};
 
 /// Implementation of the EventDispatcher trait that makes an HTTP request for every event
@@ -21,8 +24,11 @@ impl EventDispatcher for SimpleEventDispatcher {
         // Generate a new payload
         let mut payload = Payload::new(user_context.client().datafile().account_id());
 
+        // Create new request::Visitor
+        let visitor = Visitor::from(user_context);
+
         // Add single conversion
-        payload.add_conversion_event(user_context.user_id(), &conversion);
+        payload.add_conversion_event(visitor, &conversion);
 
         // Dispatch single conversion
         payload.send()
@@ -34,8 +40,11 @@ impl EventDispatcher for SimpleEventDispatcher {
         // Generate a new payload
         let mut payload = Payload::new(user_context.client().datafile().account_id());
 
+        // Create new request::Visitor
+        let visitor = Visitor::from(user_context);
+
         // Add single decision
-        payload.add_decision_event(user_context.user_id(), &decision);
+        payload.add_decision_event(visitor, &decision);
 
         // Dispatch single decision
         payload.send()

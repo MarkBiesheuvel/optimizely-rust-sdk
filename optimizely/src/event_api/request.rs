@@ -1,12 +1,14 @@
 //! Structure for the request payload
 
 // Relative imports of sub modules
+use attribute::Attribute;
 use decision::Decision;
 use event::Event;
-pub use payload::Payload;
+pub(crate) use payload::Payload;
 use snapshot::Snapshot;
-use visitor::Visitor;
+pub(crate) use visitor::Visitor;
 
+mod attribute;
 mod decision;
 mod event;
 mod payload;

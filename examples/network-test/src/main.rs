@@ -21,7 +21,9 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     for i in 0..20 {
         let user_id = format!("user{}", i);
-        let user_context = client.create_user_context(&user_id);
+        let mut user_context = client.create_user_context(&user_id);
+        user_context.set_attribute("app_version", "0.5.0");
+        user_context.set_attribute("country", "nl");
         let _decision = user_context.decide(flag_key);
     }
 

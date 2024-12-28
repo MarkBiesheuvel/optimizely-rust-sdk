@@ -19,3 +19,9 @@ impl Decision {
         }
     }
 }
+
+impl From<&crate::Decision> for Decision {
+    fn from(decision: &crate::Decision) -> Self {
+        Self::new(decision.campaign_id().into(), decision.experiment_id().into(), decision.variation_id().into())
+    }
+}

@@ -36,3 +36,14 @@ impl Event {
         }
     }
 }
+
+impl From<&crate::Conversion> for Event {
+    fn from(conversion: &crate::Conversion) -> Self {
+        Self::new(
+            conversion.event_id().into(),
+            conversion.event_key().into(),
+            conversion.properties().clone(),
+            conversion.tags().clone(),
+        )
+    }
+}

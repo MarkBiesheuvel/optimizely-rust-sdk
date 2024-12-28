@@ -4,14 +4,11 @@ use crate::datafile;
 
 /// An attribute of the user.
 pub struct UserAttribute {
-    #[allow(dead_code)]
     id: String,
-    #[allow(dead_code)]
     key: String,
     // Unfortunately, attributes in Optimizely do not have a type.
     // Types are specified in the audience condition, however there is no guarantee that the same attribute will be compared to the same type in every audience condition.
     // The Event API expects all attributes to be a text, hence why we always store the value as a String
-    #[allow(dead_code)]
     value: String,
 }
 
@@ -28,6 +25,16 @@ impl UserAttribute {
     /// Get ID of the attribute
     pub fn id(&self) -> &str {
         &self.id
+    }
+
+    /// Get key of the attribute
+    pub fn key(&self) -> &str {
+        &self.key
+    }
+
+    /// Get value of the attribute
+    pub fn value(&self) -> &str {
+        &self.value
     }
 }
 

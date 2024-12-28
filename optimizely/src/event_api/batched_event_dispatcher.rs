@@ -3,7 +3,8 @@ use std::sync::mpsc;
 use std::thread;
 
 // Imports from super
-use super::{request::Payload, EventDispatcher};
+use super::request::{Payload, Visitor};
+use super::EventDispatcher;
 
 // Imports from crate
 use crate::{client::UserContext, Conversion, Decision};
@@ -11,7 +12,7 @@ use crate::{client::UserContext, Conversion, Decision};
 // Structure used to send message between threads
 struct ThreadMessage {
     account_id: String,
-    user_id: String,
+    visitor: Visitor,
     event: EventEnum,
 }
 enum EventEnum {
@@ -46,7 +47,7 @@ impl Default for BatchedEventDispatcher {
                 // Deconstruct the message
                 let ThreadMessage {
                     account_id,
-                    user_id,
+                    visitor,
                     event,
                 } = message;
 
@@ -56,10 +57,10 @@ impl Default for BatchedEventDispatcher {
                 // the corresponding event to the payload
                 match event {
                     EventEnum::Conversion(conversion) => {
-                        payload.add_conversion_event(&user_id, &conversion);
+                        payload.add_conversion_event(visitor, &conversion);
                     }
                     EventEnum::Decision(decision) => {
-                        payload.add_decision_event(&user_id, &decision);
+                        payload.add_decision_event(visitor, &decision);
                     }
                 }
 
@@ -110,12 +111,12 @@ impl BatchedEventDispatcher {
     fn transmit(&self, user_context: &UserContext, event: EventEnum) {
         // Create a String so the value can be owned by the other thread.
         let account_id = user_context.client().datafile().account_id().into();
-        let user_id = user_context.user_id().into();
+        let visitor = Visitor::from(user_context);
 
         // Build message
         let message = ThreadMessage {
             account_id,
-            user_id,
+            visitor,
             event,
         };
 

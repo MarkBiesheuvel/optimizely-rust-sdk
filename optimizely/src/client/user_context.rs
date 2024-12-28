@@ -53,7 +53,7 @@ impl UserContext<'_> {
         UserContext {
             client,
             user_id,
-            user_attributes: HashMap::new()
+            user_attributes: HashMap::new(),
         }
     }
 
@@ -68,13 +68,12 @@ impl UserContext<'_> {
                 // Create user attribute by adding a value to a (datafile) attribute
                 let user_attribute = UserAttribute::from((attribute, value));
                 self.user_attributes.insert(key, user_attribute);
-            },
+            }
             None => {
                 // Attribute key not found
                 log::warn!("Attribute key does not exist in datafile");
             }
         }
-
     }
 
     /// Get the client instance

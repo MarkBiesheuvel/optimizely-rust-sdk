@@ -29,7 +29,7 @@ impl Payload<'_> {
     pub fn new<T: Into<String>>(account_id: T) -> Payload<'static> {
         Payload {
             account_id: account_id.into(),
-            visitors: Vec::<Visitor>::new(),
+            visitors: Vec::new(),
             enrich_decisions: true,
             anonymize_ip: true,
             client_name: CLIENT_NAME,
@@ -43,12 +43,8 @@ impl Payload<'_> {
     }
 
     /// Add a conversion event for a specific visitor to the payload
-    pub fn add_conversion_event<T: Into<String>>(&mut self, user_id: T, conversion: &Conversion) {
+    pub fn add_conversion_event(&mut self, mut visitor: Visitor, conversion: &Conversion) {
         log::debug!("Adding conversion event to payload");
-        // TODO: look up visitor ID in existing list
-
-        // Create new request::Visitor
-        let mut visitor = Visitor::new(user_id);
 
         // Add custom event
         visitor.add_event(conversion);
@@ -58,12 +54,8 @@ impl Payload<'_> {
     }
 
     /// Add a decision event for a specific visitor to the payload
-    pub fn add_decision_event<T: Into<String>>(&mut self, user_id: T, decision: &Decision) {
+    pub fn add_decision_event(&mut self, mut visitor: Visitor, decision: &Decision) {
         log::debug!("Adding decision event to payload");
-        // TODO: look up visitor ID in existing list
-
-        // Create new request::Visitor
-        let mut visitor = Visitor::new(user_id);
 
         // Use campaign_id as entity_id
         let entity_id = decision.campaign_id();

@@ -18,7 +18,9 @@ fn user_context_set_attribute() {
 
     // Attributes should be equal to expected
     assert_eq!(attributes.len(), 2);
-    assert!(attributes.iter().any(|attribute| attribute.id() == "23328260042"));
+    assert!(attributes
+        .iter()
+        .any(|attribute| attribute.id() == "23328260042"));
 }
 
 #[test]
