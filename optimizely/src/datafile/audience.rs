@@ -13,7 +13,7 @@ pub struct Audience {
     id: String,
     #[allow(dead_code)]
     name: String,
-    #[serde(deserialize_with = "Condition::deserialize")]
+    #[allow(dead_code)]
     conditions: Condition,
 }
 
@@ -30,6 +30,7 @@ impl Audience {
 
         dbg!(map);
         panic!();
+        #[allow(unreachable_code)]
         Ok(map)
     }
 }
