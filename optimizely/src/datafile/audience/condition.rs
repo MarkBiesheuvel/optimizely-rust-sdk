@@ -7,12 +7,10 @@ use super::MatchType;
 
 #[derive(Deserialize, Debug)]
 pub enum Condition {
-    #[allow(dead_code)]
-    AndCondition(Vec<Condition>),
-    #[allow(dead_code)]
-    OrCondition(Vec<Condition>),
-    #[allow(dead_code)]
-    OrMatch(Vec<MatchType>),
+    AndSequence(Vec<Condition>),
+    OrSequence(Vec<Condition>),
+    // Negation(Condition), TODO: advanced conditions
+    Match(MatchType),
 }
 
 impl Condition {
@@ -30,60 +28,33 @@ impl Condition {
 
     fn parse(data: Value) -> Result<Condition, &'static str> {
         // Data should be an array
-        let data = match data {
-            Value::Array(array) => Ok(array),
-            _ => Err("Invalid condition"),
-        }?;
+        match data {
+            Value::Array(array) => {
+                // Parse the first item as the operator
+                let operator = match array.first() {
+                    Some(Value::String(operator)) => Ok(operator.to_owned()),
+                    _ => Err("Condition with invalid operator type"),
+                }?;
 
-        // Get reference to first two items
-        let first_item = data.get(0);
-        let second_item = data.get(1);
-
-        // Parse the first item as the operator
-        let operator = match first_item {
-            Some(Value::String(operator)) => Ok(operator),
-            _ => Err("Condition with invalid operator type"),
-        }?;
-
-        // The operator should always be either "and" or "or"
-        match operator.as_str() {
-            "and" => {
                 // Parse each of the sub conditions
-                let conditions = data
+                let conditions = array
                     .into_iter()
                     .skip(1)
                     .map(|condition| Condition::parse(condition))
                     .collect::<Result<Vec<_>, _>>()?;
 
-                Ok(Condition::AndCondition(conditions))
+                // The operator should always be either "and" or "or"
+                match operator.as_str() {
+                    "and" => Ok(Condition::AndSequence(conditions)),
+                    "or" => Ok(Condition::OrSequence(conditions)),
+                    _ => Err("Condition with invalid operator value"),
+                }
             }
-            "or" => match second_item {
-                Some(Value::Array(_)) => {
-                    // Parse each of the sub conditions
-                    let conditions = data
-                        .into_iter()
-                        .skip(1)
-                        .map(|condition| Condition::parse(condition))
-                        .collect::<Result<Vec<_>, _>>()?;
-
-                    Ok(Condition::OrCondition(conditions))
-                }
-                Some(Value::Object(_)) => {
-                    // Parse each of the matches
-                    let matches = data
-                        .into_iter()
-                        .skip(1)
-                        .map(|_| MatchType::AnyValue)
-                        .collect();
-
-                    Ok(Condition::OrMatch(matches))
-                }
-                v => {
-                    dbg!(v);
-                    Err("Unexpected type in condition")
-                }
+            Value::Object(_) => {
+                // TODO: parse using serde
+                Ok(Self::Match(MatchType::AnyValue))
             },
-            _ => Err("Condition with invalid operator value"),
+            _ => Err("Invalid condition"),
         }
     }
 }
