@@ -127,20 +127,20 @@
     {
       "id": "21687330054",
       "experimentIds": [
-        "9300000125242",
         "9300000090374",
-        "9300000061857"
+        "9300000061857",
+        "9300000125242"
       ],
       "key": "subscribe"
     },
     {
       "id": "22305150298",
       "experimentIds": [
-        "9300000358644",
-        "9300000403726",
-        "9300000242981",
         "9300001497679",
-        "9300000127039"
+        "9300000403726",
+        "9300000127039",
+        "9300000242981",
+        "9300000358644"
       ],
       "key": "purchase"
     },
@@ -189,10 +189,10 @@
     {
       "id": "24762711285",
       "experimentIds": [
+        "9300000358652",
         "9300001956177",
-        "9300001497679",
         "9300000358651",
-        "9300000358652"
+        "9300001497679"
       ],
       "key": "add_to_cart"
     },
@@ -1061,7 +1061,7 @@
   "groups": [],
   "integrations": [],
   "projectId": "21537940595",
-  "revision": "547",
+  "revision": "548",
   "rollouts": [
     {
       "id": "rollout-15415-21533480907",
@@ -1846,19 +1846,19 @@
               "match": "lt",
               "name": "life_time_spend",
               "type": "custom_attribute",
-              "value": 0
+              "value": 3.14
             },
             {
               "match": "le",
               "name": "life_time_spend",
               "type": "custom_attribute",
-              "value": 0
+              "value": -42
             },
             {
               "match": "exact",
               "name": "life_time_spend",
               "type": "custom_attribute",
-              "value": 0
+              "value": 256
             },
             {
               "match": "gt",
@@ -1870,7 +1870,7 @@
               "match": "ge",
               "name": "life_time_spend",
               "type": "custom_attribute",
-              "value": 0
+              "value": 999999
             }
           ]
         ],

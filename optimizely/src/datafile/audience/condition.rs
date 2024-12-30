@@ -102,17 +102,43 @@ impl<'de> Deserialize<'de> for Condition {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::error::Error;
 
     #[test]
-    fn single_match() {
+    fn single_match() -> Result<(), Box<dyn Error>> {
         let json = r#"{"match":"semver_ge","name":"app_version","type":"custom_attribute","value":"0.4.0"}"#;
 
-        assert_eq!(
-            serde_json::from_str::<Condition>(json).unwrap(),
-            Condition::Match {
-                match_type: MatchType::SemVerGreaterThanOrEqual,
-                attribute_name: String::from("app_version")
-            }
-        );
+        let expected = Condition::Match {
+            match_type: MatchType::SemVerGreaterThanOrEqual,
+            attribute_name: String::from("app_version"),
+        };
+
+        assert_eq!(serde_json::from_str::<Condition>(json)?, expected);
+
+        Ok(())
+    }
+
+    #[test]
+    fn structured_sequence() -> Result<(), Box<dyn Error>> {
+        let json = r#"["and",["or",["or",{"match":"substring","name":"currentUri","type":"custom_attribute","value":"/checkout"}]]]"#;
+
+        // First layer, AND-sequence
+        let expected = Condition::AndSequence(Vec::from([
+            // Second layer, OR-sequence
+            Condition::OrSequence(Vec::from([
+                // Third layer, OR-sequence
+                Condition::OrSequence(Vec::from([
+                    // Fourth layer, match
+                    Condition::Match {
+                        match_type: MatchType::Substring,
+                        attribute_name: String::from("currentUri"),
+                    },
+                ])),
+            ])),
+        ]));
+
+        assert_eq!(serde_json::from_str::<Condition>(json)?, expected);
+
+        Ok(())
     }
 }
