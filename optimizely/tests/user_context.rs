@@ -1,10 +1,13 @@
+// External imports
+use std::error::Error;
+
 // Relative imports of sub modules
 use common::setup;
 mod common;
 
 #[test]
-fn user_context_set_attribute() {
-    let ctx = setup();
+fn user_context_set_attribute() -> Result<(), Box<dyn Error>> {
+    let ctx = setup()?;
 
     // Create user context without attributes
     let mut user_context = ctx.client.create_user_context("user123");
@@ -21,12 +24,14 @@ fn user_context_set_attribute() {
     assert!(attributes
         .iter()
         .any(|attribute| attribute.id() == "23328260042"));
+
+    Ok(())
 }
 
 #[test]
 #[cfg(feature = "online")]
-fn user_context_track_event() {
-    let ctx = setup();
+fn user_context_track_event() -> Result<(), Box<dyn Error>> {
+    let ctx = setup()?;
 
     // Create user context with given attributes
     let user_context = ctx.client.create_user_context("user123");
@@ -36,4 +41,6 @@ fn user_context_track_event() {
 
     // Assert that exactly one event is dispatched
     assert_eq!(ctx.conversions.len(), 1);
+
+    Ok(())
 }

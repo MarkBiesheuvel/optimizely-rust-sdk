@@ -2,6 +2,7 @@
 #![allow(dead_code)]
 
 // External imports
+use std::error::Error;
 use std::sync::{Arc, RwLock};
 
 // Imports from Optimizely crate
@@ -80,7 +81,7 @@ pub struct TestContext {
 }
 
 // A setup function used in multiple tests
-pub fn setup() -> TestContext {
+pub fn setup() -> Result<TestContext, Box<dyn Error>> {
     // Create a struct to store events
     let event_store = EventStore::default();
 
@@ -89,14 +90,13 @@ pub fn setup() -> TestContext {
     let decisions = event_store.decisions.clone();
 
     // Build client
-    let client = Client::from_local_datafile(FILE_PATH)
-        .expect("local datafile should work")
+    let client = Client::from_local_datafile(FILE_PATH)?
         .with_event_dispatcher(event_store)
         .initialize();
 
-    TestContext {
+    Ok(TestContext {
         client,
         conversions,
         decisions,
-    }
+    })
 }
