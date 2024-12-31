@@ -3,20 +3,40 @@ use serde::de::{Error, IgnoredAny, MapAccess, SeqAccess, Visitor};
 use serde::{Deserialize, Deserializer};
 use std::fmt;
 
-use super::{MatchType, Value};
+use super::operator::{NumericOperator, StringOperator, VersionOperator};
+use super::value::{NumericValue, VersionValue};
 
 const FIELD_MATCH_TYPE: &str = "match";
 const FIELD_ATTRIBUTE_NAME: &str = "name";
 const FIELD_VALUE: &str = "value";
 
+type AttributeName = String;
+
 #[derive(Debug, PartialEq)]
 pub enum Condition {
     AndSequence(Vec<Condition>),
     OrSequence(Vec<Condition>),
-    Match {
-        match_type: MatchType,
-        attribute_name: String,
-        value: Value,
+    NumericComparison {
+        attribute_name: AttributeName,
+        operator: NumericOperator,
+        value: NumericValue,
+    },
+    VersionComparison {
+        attribute_name: AttributeName,
+        operator: VersionOperator,
+        value: VersionValue,
+    },
+    StringComparison {
+        attribute_name: AttributeName,
+        operator: StringOperator,
+        value: String,
+    },
+    BooleanComparison {
+        attribute_name: AttributeName,
+        value: bool,
+    },
+    AnyValue {
+        attribute_name: AttributeName,
     },
 }
 
@@ -54,9 +74,9 @@ impl<'de> Visitor<'de> for ConditionVisitor {
     where
         A: MapAccess<'de>,
     {
-        let mut match_type = None;
-        let mut attribute_name = None;
-        let mut value = None;
+        let mut match_type = Option::<String>::None;
+        let mut attribute_name = Option::<String>::None;
+        let mut value = Option::<serde_json::Value>::None;
 
         while let Some(key) = map.next_key::<String>()? {
             match key.as_str() {
@@ -89,13 +109,88 @@ impl<'de> Visitor<'de> for ConditionVisitor {
         let attribute_name = attribute_name.ok_or_else(|| Error::missing_field(FIELD_ATTRIBUTE_NAME))?;
         let value = value.ok_or_else(|| Error::missing_field(FIELD_VALUE))?;
 
-        // NOTE: some combinations of MatchType and value are invalid
-
-        Ok(Condition::Match {
-            match_type,
-            attribute_name,
-            value,
-        })
+        match (match_type.as_str(), value) {
+            // Checking whether an attribute has any value
+            ("exists", serde_json::Value::Null) => Ok(Condition::AnyValue { attribute_name }),
+            // Checking whether an attribute is equal to a string value
+            ("exact", serde_json::Value::String(value)) => Ok(Condition::StringComparison {
+                operator: StringOperator::Equal,
+                attribute_name,
+                value,
+            }),
+            // Checking whether an attribute contains a string value
+            ("substring", serde_json::Value::String(value)) => Ok(Condition::StringComparison {
+                operator: StringOperator::Contains,
+                attribute_name,
+                value,
+            }),
+            // Checking whether an attribute is equal to a bool value
+            ("exact", serde_json::Value::Bool(value)) => Ok(Condition::BooleanComparison {
+                attribute_name,
+                value,
+            }),
+            // Checking whether an attribute is equal to a numeric value
+            ("exact", serde_json::Value::Number(value)) => Ok(Condition::NumericComparison {
+                operator: NumericOperator::Equal,
+                attribute_name,
+                value: NumericValue::try_from(value).unwrap(),
+            }),
+            // Checking whether an attribute is less than a numeric value
+            ("lt", serde_json::Value::Number(value)) => Ok(Condition::NumericComparison {
+                operator: NumericOperator::LessThan,
+                attribute_name,
+                value: NumericValue::try_from(value).unwrap(),
+            }),
+            // Checking whether an attribute is less than or equal to a numeric value
+            ("le", serde_json::Value::Number(value)) => Ok(Condition::NumericComparison {
+                operator: NumericOperator::LessThanOrEqual,
+                attribute_name,
+                value: NumericValue::try_from(value).unwrap(),
+            }),
+            // Checking whether an attribute is greater than a numeric value
+            ("gt", serde_json::Value::Number(value)) => Ok(Condition::NumericComparison {
+                operator: NumericOperator::GreaterThan,
+                attribute_name,
+                value: NumericValue::try_from(value).unwrap(),
+            }),
+            // Checking whether an attribute is greater than or equal to a numeric value
+            ("ge", serde_json::Value::Number(value)) => Ok(Condition::NumericComparison {
+                operator: NumericOperator::GreaterThanOrEqual,
+                attribute_name,
+                value: NumericValue::try_from(value).unwrap(),
+            }),
+            // Checking whether an attribute is equal to a version number
+            ("semver_eq", serde_json::Value::String(value)) => Ok(Condition::VersionComparison {
+                operator: VersionOperator::Equal,
+                attribute_name,
+                value: VersionValue::try_from(&*value).unwrap(),
+            }),
+            // Checking whether an attribute is less than a version number
+            ("semver_lt", serde_json::Value::String(value)) => Ok(Condition::VersionComparison {
+                operator: VersionOperator::LessThan,
+                attribute_name,
+                value: VersionValue::try_from(&*value).unwrap(),
+            }),
+            // Checking whether an attribute is less than or equal to a version number
+            ("semver_le", serde_json::Value::String(value)) => Ok(Condition::VersionComparison {
+                operator: VersionOperator::LessThanOrEqual,
+                attribute_name,
+                value: VersionValue::try_from(&*value).unwrap(),
+            }),
+            // Checking whether an attribute is greater than a version number
+            ("semver_gt", serde_json::Value::String(value)) => Ok(Condition::VersionComparison {
+                operator: VersionOperator::GreaterThan,
+                attribute_name,
+                value: VersionValue::try_from(&*value).unwrap(),
+            }),
+            // Checking whether an attribute is greater than or equal to a version number
+            ("semver_ge", serde_json::Value::String(value)) => Ok(Condition::VersionComparison {
+                operator: VersionOperator::GreaterThanOrEqual,
+                attribute_name,
+                value: VersionValue::try_from(&*value).unwrap(),
+            }),
+            _ => Err(Error::custom("invalid configuration of condition")),
+        }
     }
 }
 
@@ -117,10 +212,10 @@ mod tests {
     fn single_match() -> Result<(), Box<dyn Error>> {
         let json = r#"{"match":"semver_ge","name":"app_version","type":"custom_attribute","value":"0.4.0"}"#;
 
-        let expected = Condition::Match {
-            match_type: MatchType::SemVerGreaterThanOrEqual,
+        let expected = Condition::VersionComparison {
             attribute_name: String::from("app_version"),
-            value: Value::String(String::from("0.4.0")),
+            operator: VersionOperator::GreaterThanOrEqual,
+            value: VersionValue::try_from("0.4.0")?,
         };
 
         assert_eq!(serde_json::from_str::<Condition>(json)?, expected);
@@ -139,10 +234,10 @@ mod tests {
                 // Third layer, OR-sequence
                 Condition::OrSequence(Vec::from([
                     // Fourth layer, match
-                    Condition::Match {
-                        match_type: MatchType::Substring,
+                    Condition::StringComparison {
                         attribute_name: String::from("currentUri"),
-                        value: Value::String(String::from("/checkout")),
+                        operator: StringOperator::Contains,
+                        value: String::from("/checkout"),
                     },
                 ])),
             ])),

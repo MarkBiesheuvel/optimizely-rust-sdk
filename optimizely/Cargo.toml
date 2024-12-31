@@ -14,8 +14,9 @@ keywords = ["optimizely", "experimentation", "feature-flagging"]
 serde_json = "1.0"
 thiserror = "2.0"
 error-stack = "0.5"
-murmur3 = "0.5.2"
+murmur3 = "0.5"
 log = "0.4"
+semver = "1.0"
 
 [dependencies.serde]
 version = "1.0"

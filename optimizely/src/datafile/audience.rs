@@ -3,11 +3,9 @@ use serde::{Deserialize, Deserializer};
 use std::collections::HashMap;
 
 use condition::Condition;
-use match_type::MatchType;
-use value::Value;
 
 mod condition;
-mod match_type;
+mod operator;
 mod value;
 
 #[derive(Deserialize, Debug)]
