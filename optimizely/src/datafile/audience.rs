@@ -4,9 +4,11 @@ use std::collections::HashMap;
 
 use condition::Condition;
 use match_type::MatchType;
+use value::Value;
 
 mod condition;
 mod match_type;
+mod value;
 
 #[derive(Deserialize, Debug)]
 pub struct Audience {
@@ -28,9 +30,6 @@ impl Audience {
             map.insert(audience.id.clone(), audience);
         }
 
-        dbg!(map);
-        panic!();
-        #[allow(unreachable_code)]
         Ok(map)
     }
 }

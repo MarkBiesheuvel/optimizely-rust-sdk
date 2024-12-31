@@ -3,10 +3,11 @@ use serde::de::{Error, IgnoredAny, MapAccess, SeqAccess, Visitor};
 use serde::{Deserialize, Deserializer};
 use std::fmt;
 
-use super::MatchType;
+use super::{MatchType, Value};
 
 const FIELD_MATCH_TYPE: &str = "match";
 const FIELD_ATTRIBUTE_NAME: &str = "name";
+const FIELD_VALUE: &str = "value";
 
 #[derive(Debug, PartialEq)]
 pub enum Condition {
@@ -15,6 +16,7 @@ pub enum Condition {
     Match {
         match_type: MatchType,
         attribute_name: String,
+        value: Value,
     },
 }
 
@@ -54,6 +56,7 @@ impl<'de> Visitor<'de> for ConditionVisitor {
     {
         let mut match_type = None;
         let mut attribute_name = None;
+        let mut value = None;
 
         while let Some(key) = map.next_key::<String>()? {
             match key.as_str() {
@@ -69,9 +72,11 @@ impl<'de> Visitor<'de> for ConditionVisitor {
                     }
                     attribute_name = Some(map.next_value()?);
                 }
-                "value" => {
-                    // TODO: implement
-                    map.next_value::<IgnoredAny>()?;
+                FIELD_VALUE => {
+                    if value.is_some() {
+                        return Err(Error::duplicate_field(FIELD_VALUE));
+                    }
+                    value = Some(map.next_value()?);
                 }
                 _ => {
                     // Skip unknown fields
@@ -82,10 +87,14 @@ impl<'de> Visitor<'de> for ConditionVisitor {
 
         let match_type = match_type.ok_or_else(|| Error::missing_field(FIELD_MATCH_TYPE))?;
         let attribute_name = attribute_name.ok_or_else(|| Error::missing_field(FIELD_ATTRIBUTE_NAME))?;
+        let value = value.ok_or_else(|| Error::missing_field(FIELD_VALUE))?;
+
+        // NOTE: some combinations of MatchType and value are invalid
 
         Ok(Condition::Match {
             match_type,
             attribute_name,
+            value,
         })
     }
 }
@@ -111,6 +120,7 @@ mod tests {
         let expected = Condition::Match {
             match_type: MatchType::SemVerGreaterThanOrEqual,
             attribute_name: String::from("app_version"),
+            value: Value::String(String::from("0.4.0")),
         };
 
         assert_eq!(serde_json::from_str::<Condition>(json)?, expected);
@@ -132,6 +142,7 @@ mod tests {
                     Condition::Match {
                         match_type: MatchType::Substring,
                         attribute_name: String::from("currentUri"),
+                        value: Value::String(String::from("/checkout")),
                     },
                 ])),
             ])),
