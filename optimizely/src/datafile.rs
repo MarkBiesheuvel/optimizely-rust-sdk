@@ -4,16 +4,17 @@
 use error_stack::{Result, ResultExt};
 
 // Relative imports of sub modules
-pub(crate) use attribute::Attribute;
-use audience::Audience;
+pub(crate) use attribute::{Attribute, AttributeMap};
+use audience::AudienceMap;
 use environment::Environment;
 pub use error::DatafileError;
-pub(crate) use event::Event;
-pub(crate) use experiment::Experiment;
-pub(crate) use feature_flag::FeatureFlag;
-use rollout::Rollout;
+pub(crate) use event::{Event, EventMap};
+pub(crate) use experiment::{Experiment, ExperimentMap};
+pub(crate) use feature_flag::{FeatureFlag, FeatureFlagMap};
+use revision::Revision;
+use rollout::{Rollout, RolloutMap};
 use traffic_allocation::TrafficAllocation;
-pub(crate) use variation::Variation;
+pub(crate) use variation::{Variation, VariationMap};
 
 mod attribute;
 mod audience;
@@ -22,6 +23,7 @@ mod error;
 mod event;
 mod experiment;
 mod feature_flag;
+mod revision;
 mod rollout;
 mod traffic_allocation;
 mod variation;
@@ -55,7 +57,7 @@ impl Datafile {
 
     /// Get the revision of the datafile
     pub fn revision(&self) -> u32 {
-        self.0.revision()
+        **self.0.revision()
     }
 
     /// Get the flag with the given key

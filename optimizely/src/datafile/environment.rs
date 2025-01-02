@@ -1,47 +1,27 @@
 // External imports
-use serde::{Deserialize, Deserializer};
-use std::collections::HashMap;
+use serde::Deserialize;
 
 // Imports from super
-use super::{Attribute, Audience, Event, Experiment, FeatureFlag, Rollout};
+use super::{AttributeMap, AudienceMap, EventMap, ExperimentMap, FeatureFlagMap, Revision, RolloutMap};
 
 #[derive(Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct Environment {
-    #[serde(rename = "accountId")]
     account_id: String,
-    #[serde(rename = "projectId")]
     project_id: String,
-    #[serde(rename = "environmentKey")]
     environment_key: String,
-    #[serde(deserialize_with = "deserialize_revision")]
-    revision: u32,
-    #[serde(rename = "botFiltering")]
+    revision: Revision,
     bot_filtering: bool,
     #[serde(rename = "anonymizeIP")]
     anonymize_ip: bool,
-    #[serde(deserialize_with = "Event::deserialize")]
-    events: HashMap<String, Event>,
-    #[serde(deserialize_with = "Attribute::deserialize")]
+    events: EventMap,
+    attributes: AttributeMap,
+    #[serde(rename = "typedAudiences")]
     #[allow(dead_code)]
-    attributes: HashMap<String, Attribute>,
-    #[serde(rename = "typedAudiences", deserialize_with = "Audience::deserialize")]
-    #[allow(dead_code)]
-    audiences: HashMap<String, Audience>,
-    #[serde(deserialize_with = "Experiment::deserialize")]
-    experiments: HashMap<String, Experiment>,
-    #[serde(deserialize_with = "Rollout::deserialize")]
-    rollouts: HashMap<String, Rollout>,
-    #[serde(rename = "featureFlags", deserialize_with = "FeatureFlag::deserialize")]
-    feature_flags: HashMap<String, FeatureFlag>,
-}
-
-fn deserialize_revision<'de, D>(deserializer: D) -> Result<u32, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    String::deserialize(deserializer)?
-        .parse::<u32>()
-        .map_err(serde::de::Error::custom)
+    audiences: AudienceMap,
+    experiments: ExperimentMap,
+    rollouts: RolloutMap,
+    feature_flags: FeatureFlagMap,
 }
 
 impl Environment {
@@ -61,8 +41,8 @@ impl Environment {
     }
 
     /// Getter for `revision` field
-    pub fn revision(&self) -> u32 {
-        self.revision
+    pub fn revision(&self) -> &Revision {
+        &self.revision
     }
 
     #[allow(dead_code)]
@@ -75,23 +55,23 @@ impl Environment {
         self.anonymize_ip
     }
 
-    pub fn feature_flags(&self) -> &HashMap<String, FeatureFlag> {
+    pub fn feature_flags(&self) -> &FeatureFlagMap {
         &self.feature_flags
     }
 
-    pub fn experiments(&self) -> &HashMap<String, Experiment> {
+    pub fn experiments(&self) -> &ExperimentMap {
         &self.experiments
     }
 
-    pub fn rollouts(&self) -> &HashMap<String, Rollout> {
+    pub fn rollouts(&self) -> &RolloutMap {
         &self.rollouts
     }
 
-    pub fn events(&self) -> &HashMap<String, Event> {
+    pub fn events(&self) -> &EventMap {
         &self.events
     }
 
-    pub fn attributes(&self) -> &HashMap<String, Attribute> {
+    pub fn attributes(&self) -> &AttributeMap {
         &self.attributes
     }
 }

@@ -9,18 +9,6 @@ pub struct Event {
 }
 
 impl Event {
-    // Method to deserialize an array of Events into a Hashmap of Events
-    pub fn deserialize<'de, D>(deserializer: D) -> Result<HashMap<String, Event>, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let mut map = HashMap::new();
-        for event in Vec::<Event>::deserialize(deserializer)? {
-            map.insert(event.key.clone(), event);
-        }
-        Ok(map)
-    }
-
     /// Getter for `id` field
     pub fn id(&self) -> &str {
         &self.id
@@ -29,5 +17,28 @@ impl Event {
     /// Getter for `key` field
     pub fn key(&self) -> &str {
         &self.key
+    }
+}
+
+#[derive(Debug)]
+pub struct EventMap(HashMap<String, Event>);
+
+impl<'de> Deserialize<'de> for EventMap {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let mut map = HashMap::new();
+        for event in Vec::<Event>::deserialize(deserializer)? {
+            map.insert(event.key.clone(), event);
+        }
+
+        Ok(Self(map))
+    }
+}
+
+impl EventMap {
+    pub fn get(&self, key: &str) -> Option<&Event> {
+        self.0.get(key)
     }
 }

@@ -18,9 +18,11 @@ pub struct Audience {
     conditions: Condition,
 }
 
-impl Audience {
-    // Method to deserialize an array of Events into a Hashmap of Events
-    pub fn deserialize<'de, D>(deserializer: D) -> Result<HashMap<String, Audience>, D::Error>
+#[derive(Debug)]
+pub struct AudienceMap(HashMap<String, Audience>);
+
+impl<'de> Deserialize<'de> for AudienceMap {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
     {
@@ -29,6 +31,13 @@ impl Audience {
             map.insert(audience.id.clone(), audience);
         }
 
-        Ok(map)
+        Ok(Self(map))
+    }
+}
+
+impl AudienceMap {
+    #[allow(dead_code)]
+    pub fn get(&self, key: &str) -> Option<&Audience> {
+        self.0.get(key)
     }
 }

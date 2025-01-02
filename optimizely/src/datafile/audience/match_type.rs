@@ -1,12 +1,10 @@
 use serde::Deserialize;
 
 #[derive(Deserialize, Debug, PartialEq)]
+#[serde(rename_all = "snake_case")]
 pub enum MatchType {
-    #[serde(rename = "exists")]
     Exists,
-    #[serde(rename = "exact")]
     Exact,
-    #[serde(rename = "substring")]
     Substring,
     #[serde(rename = "lt")]
     LessThan,

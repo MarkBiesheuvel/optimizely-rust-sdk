@@ -8,14 +8,13 @@ use super::operator::{NumericOperator, StringOperator};
 use super::value::{AnyValue, NumericValue};
 
 #[derive(Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
 enum Field {
     #[serde(rename = "match")]
     MatchType,
     #[serde(rename = "name")]
     AttributeName,
-    #[serde(rename = "value")]
     Value,
-    #[serde(rename = "type")]
     Type,
 }
 
@@ -67,11 +66,15 @@ impl<'de> Visitor<'de> for ConditionVisitor {
             conditions.push(condition);
         }
 
-        match operator.as_str() {
-            "and" => Ok(Condition::AndSequence(conditions)),
-            "or" => Ok(Condition::OrSequence(conditions)),
-            _ => Err(Error::custom(r#"expected either "and" or "or""#)),
-        }
+        let condition = match operator.as_str() {
+            "and" => Condition::AndSequence(conditions),
+            "or" => Condition::OrSequence(conditions),
+            _ => {
+                return Err(Error::custom(r#"expected either "and" or "or""#));
+            }
+        };
+
+        Ok(condition)
     }
 
     fn visit_map<V>(self, mut map: V) -> Result<Self::Value, V::Error>
