@@ -1,8 +1,6 @@
 use semver::Version;
 use serde::Deserialize;
 
-use crate::datafile::DatafileError;
-
 #[derive(Deserialize, Debug)]
 #[serde(untagged)]
 pub enum AnyValue {
@@ -22,13 +20,13 @@ pub enum NumericValue {
 #[derive(Debug, PartialEq)]
 pub struct VersionValue(Version);
 
-impl TryFrom<&str> for VersionValue {
-    type Error = DatafileError;
+impl<'a> TryFrom<&'a str> for VersionValue {
+    type Error = &'a str;
 
-    fn try_from(value: &str) -> Result<Self, Self::Error> {
+    fn try_from(value: &'a str) -> Result<Self, Self::Error> {
         match Version::parse(value) {
             Ok(version) => Ok(Self(version)),
-            Err(_) => Err(DatafileError::InvalidJson),
+            Err(_) => Err(value),
         }
     }
 }

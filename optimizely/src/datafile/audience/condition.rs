@@ -1,5 +1,5 @@
 // External imports
-use serde::de::{Error, IgnoredAny, MapAccess, SeqAccess, Visitor};
+use serde::de::{Error, IgnoredAny, MapAccess, SeqAccess, Unexpected, Visitor};
 use serde::{Deserialize, Deserializer};
 use std::fmt;
 
@@ -70,9 +70,9 @@ impl<'de> Visitor<'de> for ConditionVisitor {
         }
     }
 
-    fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
+    fn visit_map<V>(self, mut map: V) -> Result<Self::Value, V::Error>
     where
-        A: MapAccess<'de>,
+        V: MapAccess<'de>,
     {
         let mut match_type = Option::<String>::None;
         let mut attribute_name = Option::<String>::None;
@@ -105,10 +105,15 @@ impl<'de> Visitor<'de> for ConditionVisitor {
             }
         }
 
+        // Verify that all fields have been set
         let match_type = match_type.ok_or_else(|| Error::missing_field(FIELD_MATCH_TYPE))?;
         let attribute_name = attribute_name.ok_or_else(|| Error::missing_field(FIELD_ATTRIBUTE_NAME))?;
         let value = value.ok_or_else(|| Error::missing_field(FIELD_VALUE))?;
 
+        // Function to create serde:de::Error for invalid version number
+        let invalid_semver_error = |s| Error::invalid_value(Unexpected::Str(s), &"valid semantic version number");
+
+        // Only accept valid combinations of match type and value type
         match (match_type.as_str(), value) {
             // Checking whether an attribute has any value
             ("exists", AnyValue::Null) => Ok(Condition::AnyValue { attribute_name }),
@@ -163,32 +168,33 @@ impl<'de> Visitor<'de> for ConditionVisitor {
             ("semver_eq", AnyValue::String(value)) => Ok(Condition::VersionComparison {
                 operator: VersionOperator::Equal,
                 attribute_name,
-                value: VersionValue::try_from(&*value).unwrap(),
+                value: VersionValue::try_from(&*value).map_err(invalid_semver_error)?,
             }),
             // Checking whether an attribute is less than a version number
             ("semver_lt", AnyValue::String(value)) => Ok(Condition::VersionComparison {
                 operator: VersionOperator::LessThan,
                 attribute_name,
-                value: VersionValue::try_from(&*value).unwrap(),
+                value: VersionValue::try_from(&*value).map_err(invalid_semver_error)?,
             }),
             // Checking whether an attribute is less than or equal to a version number
             ("semver_le", AnyValue::String(value)) => Ok(Condition::VersionComparison {
                 operator: VersionOperator::LessThanOrEqual,
                 attribute_name,
-                value: VersionValue::try_from(&*value).unwrap(),
+                value: VersionValue::try_from(&*value).map_err(invalid_semver_error)?,
             }),
             // Checking whether an attribute is greater than a version number
             ("semver_gt", AnyValue::String(value)) => Ok(Condition::VersionComparison {
                 operator: VersionOperator::GreaterThan,
                 attribute_name,
-                value: VersionValue::try_from(&*value).unwrap(),
+                value: VersionValue::try_from(&*value).map_err(invalid_semver_error)?,
             }),
             // Checking whether an attribute is greater than or equal to a version number
             ("semver_ge", AnyValue::String(value)) => Ok(Condition::VersionComparison {
                 operator: VersionOperator::GreaterThanOrEqual,
                 attribute_name,
-                value: VersionValue::try_from(&*value).unwrap(),
+                value: VersionValue::try_from(&*value).map_err(invalid_semver_error)?,
             }),
+            // Anything else is invalid
             _ => Err(Error::custom("invalid configuration of condition")),
         }
     }
@@ -244,6 +250,18 @@ mod tests {
         ]));
 
         assert_eq!(serde_json::from_str::<Condition>(json)?, expected);
+
+        Ok(())
+    }
+
+    #[test]
+    fn invalid_version() -> Result<(), Box<dyn Error>> {
+        let json = r#"{"match":"semver_ge","name":"app_version","type":"custom_attribute","value":"one"}"#;
+
+        let error = serde_json::from_str::<Condition>(json).err().ok_or("Unexpected Result::Ok")?;
+        let expected = r#"invalid value: string "one", expected valid semantic version number at line 1 column 82"#;
+
+        assert_eq!(error.to_string(), expected);
 
         Ok(())
     }
