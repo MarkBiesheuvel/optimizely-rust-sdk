@@ -1,4 +1,3 @@
-use semver::Version;
 use serde::Deserialize;
 
 #[derive(Deserialize, Debug)]
@@ -15,18 +14,4 @@ pub enum AnyValue {
 pub enum NumericValue {
     Integer(i64),
     Decimal(f64),
-}
-
-#[derive(Debug, PartialEq)]
-pub struct VersionValue(Version);
-
-impl<'a> TryFrom<&'a str> for VersionValue {
-    type Error = &'a str;
-
-    fn try_from(value: &'a str) -> Result<Self, Self::Error> {
-        match Version::parse(value) {
-            Ok(version) => Ok(Self(version)),
-            Err(_) => Err(value),
-        }
-    }
 }

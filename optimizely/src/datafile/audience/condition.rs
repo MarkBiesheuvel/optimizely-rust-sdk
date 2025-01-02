@@ -1,11 +1,11 @@
 // External imports
-use serde::de::{Error, MapAccess, SeqAccess, Unexpected, Visitor};
+use serde::de::{Error, MapAccess, SeqAccess, Visitor};
 use serde::{Deserialize, Deserializer};
 use std::fmt;
 
 use super::match_type::MatchType;
-use super::operator::{NumericOperator, StringOperator, VersionOperator};
-use super::value::{AnyValue, NumericValue, VersionValue};
+use super::operator::{NumericOperator, StringOperator};
+use super::value::{AnyValue, NumericValue};
 
 #[derive(Deserialize, Debug)]
 enum Field {
@@ -29,11 +29,6 @@ pub enum Condition {
         attribute_name: AttributeName,
         operator: NumericOperator,
         value: NumericValue,
-    },
-    VersionComparison {
-        attribute_name: AttributeName,
-        operator: VersionOperator,
-        value: VersionValue,
     },
     StringComparison {
         attribute_name: AttributeName,
@@ -124,93 +119,70 @@ impl<'de> Visitor<'de> for ConditionVisitor {
         // Value is optional. It is not needed for exists
         let value = value.unwrap_or_else(|| AnyValue::Null);
 
-        // Function to create serde:de::Error for invalid version number
-        let invalid_semver_error = |s| Error::invalid_value(Unexpected::Str(s), &"valid semantic version number");
-
         // Only accept valid combinations of match type and value type
-        match (match_type, value) {
+        let condition = match value {
             // Checking whether an attribute exists
-            (MatchType::Exists, AnyValue::Null) => Ok(Condition::Exists { attribute_name }),
-            // Checking whether an attribute is equal to a string value
-            (MatchType::Exact, AnyValue::String(value)) => Ok(Condition::StringComparison {
-                operator: StringOperator::Equal,
-                attribute_name,
-                value,
-            }),
-            // Checking whether an attribute contains a string value
-            (MatchType::Substring, AnyValue::String(value)) => Ok(Condition::StringComparison {
-                operator: StringOperator::Contains,
-                attribute_name,
-                value,
-            }),
-            // Checking whether an attribute is equal to a bool value
-            (MatchType::Exact, AnyValue::Boolean(value)) => Ok(Condition::BooleanComparison {
-                attribute_name,
-                value,
-            }),
-            // Checking whether an attribute is equal to a numeric value
-            (MatchType::Exact, AnyValue::Number(value)) => Ok(Condition::NumericComparison {
-                operator: NumericOperator::Equal,
-                attribute_name,
-                value,
-            }),
-            // Checking whether an attribute is less than a numeric value
-            (MatchType::LessThan, AnyValue::Number(value)) => Ok(Condition::NumericComparison {
-                operator: NumericOperator::LessThan,
-                attribute_name,
-                value,
-            }),
-            // Checking whether an attribute is less than or equal to a numeric value
-            (MatchType::LessThanOrEqual, AnyValue::Number(value)) => Ok(Condition::NumericComparison {
-                operator: NumericOperator::LessThanOrEqual,
-                attribute_name,
-                value,
-            }),
-            // Checking whether an attribute is greater than a numeric value
-            (MatchType::GreaterThan, AnyValue::Number(value)) => Ok(Condition::NumericComparison {
-                operator: NumericOperator::GreaterThan,
-                attribute_name,
-                value,
-            }),
-            // Checking whether an attribute is greater than or equal to a numeric value
-            (MatchType::GreaterThanOrEqual, AnyValue::Number(value)) => Ok(Condition::NumericComparison {
-                operator: NumericOperator::GreaterThanOrEqual,
-                attribute_name,
-                value,
-            }),
-            // Checking whether an attribute is equal to a version number
-            (MatchType::SemVerEqual, AnyValue::String(value)) => Ok(Condition::VersionComparison {
-                operator: VersionOperator::Equal,
-                attribute_name,
-                value: VersionValue::try_from(&*value).map_err(invalid_semver_error)?,
-            }),
-            // Checking whether an attribute is less than a version number
-            (MatchType::SemVerLessThan, AnyValue::String(value)) => Ok(Condition::VersionComparison {
-                operator: VersionOperator::LessThan,
-                attribute_name,
-                value: VersionValue::try_from(&*value).map_err(invalid_semver_error)?,
-            }),
-            // Checking whether an attribute is less than or equal to a version number
-            (MatchType::SemVerLessThanOrEqual, AnyValue::String(value)) => Ok(Condition::VersionComparison {
-                operator: VersionOperator::LessThanOrEqual,
-                attribute_name,
-                value: VersionValue::try_from(&*value).map_err(invalid_semver_error)?,
-            }),
-            // Checking whether an attribute is greater than a version number
-            (MatchType::SemVerGreaterThan, AnyValue::String(value)) => Ok(Condition::VersionComparison {
-                operator: VersionOperator::GreaterThan,
-                attribute_name,
-                value: VersionValue::try_from(&*value).map_err(invalid_semver_error)?,
-            }),
-            // Checking whether an attribute is greater than or equal to a version number
-            (MatchType::SemVerGreaterThanOrEqual, AnyValue::String(value)) => Ok(Condition::VersionComparison {
-                operator: VersionOperator::GreaterThanOrEqual,
-                attribute_name,
-                value: VersionValue::try_from(&*value).map_err(invalid_semver_error)?,
-            }),
-            // Anything else is invalid
-            _ => Err(Error::custom("invalid configuration of condition")),
-        }
+            AnyValue::Null => {
+                // Only one valid operator
+                if match_type != MatchType::Exists {
+                    return Err(Error::custom("invalid operator for empty type"));
+                }
+
+                Condition::Exists { attribute_name }
+            }
+            // Comparing an attribute to a boolean value
+            AnyValue::Boolean(value) => {
+                // Only one valid operator
+                if match_type != MatchType::Exact {
+                    return Err(Error::custom("invalid operator for boolean"));
+                }
+
+                Condition::BooleanComparison {
+                    attribute_name,
+                    value,
+                }
+            }
+            // Comparing an attribute to a numeric value
+            AnyValue::Number(value) => {
+                let operator = match match_type {
+                    MatchType::Exact => NumericOperator::Equal,
+                    MatchType::LessThan => NumericOperator::LessThan,
+                    MatchType::LessThanOrEqual => NumericOperator::LessThanOrEqual,
+                    MatchType::GreaterThan => NumericOperator::GreaterThan,
+                    MatchType::GreaterThanOrEqual => NumericOperator::GreaterThanOrEqual,
+                    _ => return Err(Error::custom("invalid operator for number")),
+                };
+
+                Condition::NumericComparison {
+                    operator,
+                    attribute_name,
+                    value,
+                }
+            }
+            // Comparing an attribute to a string value
+            AnyValue::String(value) => {
+                let operator = match match_type {
+                    MatchType::Exact => StringOperator::Equal,
+                    MatchType::Substring => StringOperator::Contains,
+                    MatchType::SemVerEqual => StringOperator::SemVerEqual,
+                    MatchType::SemVerLessThan => StringOperator::SemVerLessThan,
+                    MatchType::SemVerLessThanOrEqual => StringOperator::SemVerLessThanOrEqual,
+                    MatchType::SemVerGreaterThan => StringOperator::SemVerGreaterThan,
+                    MatchType::SemVerGreaterThanOrEqual => StringOperator::SemVerGreaterThanOrEqual,
+                    _ => {
+                        return Err(Error::custom("invalid operator for string"));
+                    }
+                };
+
+                Condition::StringComparison {
+                    operator,
+                    attribute_name,
+                    value,
+                }
+            }
+        };
+
+        Ok(condition)
     }
 }
 
@@ -232,10 +204,10 @@ mod tests {
     fn single_match() -> Result<(), Box<dyn Error>> {
         let json = r#"{"match":"semver_ge","name":"app_version","type":"custom_attribute","value":"0.4.0"}"#;
 
-        let expected = Condition::VersionComparison {
+        let expected = Condition::StringComparison {
             attribute_name: String::from("app_version"),
-            operator: VersionOperator::GreaterThanOrEqual,
-            value: VersionValue::try_from("0.4.0")?,
+            operator: StringOperator::SemVerGreaterThanOrEqual,
+            value: String::from("0.4.0"),
         };
 
         assert_eq!(serde_json::from_str::<Condition>(json)?, expected);
@@ -264,21 +236,6 @@ mod tests {
         ]));
 
         assert_eq!(serde_json::from_str::<Condition>(json)?, expected);
-
-        Ok(())
-    }
-
-    #[test]
-    fn invalid_version() -> Result<(), Box<dyn Error>> {
-        let json = r#"{"match":"semver_ge","name":"app_version","type":"custom_attribute","value":"one"}"#;
-
-        let error = serde_json::from_str::<Condition>(json)
-            .err()
-            .ok_or("Unexpected Result::Ok")?;
-
-        let expected = r#"invalid value: string "one", expected valid semantic version number at line 1 column 82"#;
-
-        assert_eq!(error.to_string(), expected);
 
         Ok(())
     }
