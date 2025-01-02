@@ -1,14 +1,23 @@
 // External imports
-use serde::de::{Error, IgnoredAny, MapAccess, SeqAccess, Unexpected, Visitor};
+use serde::de::{Error, MapAccess, SeqAccess, Unexpected, Visitor};
 use serde::{Deserialize, Deserializer};
 use std::fmt;
 
+use super::match_type::MatchType;
 use super::operator::{NumericOperator, StringOperator, VersionOperator};
 use super::value::{AnyValue, NumericValue, VersionValue};
 
-const FIELD_MATCH_TYPE: &str = "match";
-const FIELD_ATTRIBUTE_NAME: &str = "name";
-const FIELD_VALUE: &str = "value";
+#[derive(Deserialize, Debug)]
+enum Field {
+    #[serde(rename = "match")]
+    MatchType,
+    #[serde(rename = "name")]
+    AttributeName,
+    #[serde(rename = "value")]
+    Value,
+    #[serde(rename = "type")]
+    Type,
+}
 
 type AttributeName = String;
 
@@ -35,7 +44,7 @@ pub enum Condition {
         attribute_name: AttributeName,
         value: bool,
     },
-    AnyValue {
+    Exists {
         attribute_name: AttributeName,
     },
 }
@@ -74,122 +83,127 @@ impl<'de> Visitor<'de> for ConditionVisitor {
     where
         V: MapAccess<'de>,
     {
-        let mut match_type = Option::<String>::None;
-        let mut attribute_name = Option::<String>::None;
-        let mut value = Option::<AnyValue>::None;
+        // Start with all variables set to none
+        let mut match_type = Option::None;
+        let mut attribute_name = Option::None;
+        let mut value = Option::None;
 
-        while let Some(key) = map.next_key::<String>()? {
-            match key.as_str() {
-                FIELD_MATCH_TYPE => {
+        // Iterate ovr all keys
+        while let Some(key) = map.next_key::<Field>()? {
+            match key {
+                Field::MatchType => {
                     if match_type.is_some() {
-                        return Err(Error::duplicate_field(FIELD_MATCH_TYPE));
+                        return Err(Error::duplicate_field("match"));
                     }
-                    match_type = Some(map.next_value()?);
+                    match_type = Some(map.next_value::<MatchType>()?);
                 }
-                FIELD_ATTRIBUTE_NAME => {
+                Field::AttributeName => {
                     if attribute_name.is_some() {
-                        return Err(Error::duplicate_field(FIELD_ATTRIBUTE_NAME));
+                        return Err(Error::duplicate_field("name"));
                     }
-                    attribute_name = Some(map.next_value()?);
+                    attribute_name = Some(map.next_value::<AttributeName>()?);
                 }
-                FIELD_VALUE => {
+                Field::Value => {
                     if value.is_some() {
-                        return Err(Error::duplicate_field(FIELD_VALUE));
+                        return Err(Error::duplicate_field("value"));
                     }
-                    value = Some(map.next_value()?);
+                    value = Some(map.next_value::<AnyValue>()?);
                 }
-                _ => {
-                    // Skip unknown fields
-                    map.next_value::<IgnoredAny>()?;
+                Field::Type => {
+                    // Skip type field as it is always "custom_attribute"
+                    let _type = map.next_value::<String>()?;
+                    assert_eq!(_type, "custom_attribute");
                 }
             }
         }
 
-        // Verify that all fields have been set
-        let match_type = match_type.ok_or_else(|| Error::missing_field(FIELD_MATCH_TYPE))?;
-        let attribute_name = attribute_name.ok_or_else(|| Error::missing_field(FIELD_ATTRIBUTE_NAME))?;
-        let value = value.ok_or_else(|| Error::missing_field(FIELD_VALUE))?;
+        // Verify that match type and attribute name have been set
+        let match_type = match_type.ok_or_else(|| Error::missing_field("match"))?;
+        let attribute_name = attribute_name.ok_or_else(|| Error::missing_field("name"))?;
+
+        // Value is optional. It is not needed for exists
+        let value = value.unwrap_or_else(|| AnyValue::Null);
 
         // Function to create serde:de::Error for invalid version number
         let invalid_semver_error = |s| Error::invalid_value(Unexpected::Str(s), &"valid semantic version number");
 
         // Only accept valid combinations of match type and value type
-        match (match_type.as_str(), value) {
-            // Checking whether an attribute has any value
-            ("exists", AnyValue::Null) => Ok(Condition::AnyValue { attribute_name }),
+        match (match_type, value) {
+            // Checking whether an attribute exists
+            (MatchType::Exists, AnyValue::Null) => Ok(Condition::Exists { attribute_name }),
             // Checking whether an attribute is equal to a string value
-            ("exact", AnyValue::String(value)) => Ok(Condition::StringComparison {
+            (MatchType::Exact, AnyValue::String(value)) => Ok(Condition::StringComparison {
                 operator: StringOperator::Equal,
                 attribute_name,
                 value,
             }),
             // Checking whether an attribute contains a string value
-            ("substring", AnyValue::String(value)) => Ok(Condition::StringComparison {
+            (MatchType::Substring, AnyValue::String(value)) => Ok(Condition::StringComparison {
                 operator: StringOperator::Contains,
                 attribute_name,
                 value,
             }),
             // Checking whether an attribute is equal to a bool value
-            ("exact", AnyValue::Boolean(value)) => Ok(Condition::BooleanComparison {
+            (MatchType::Exact, AnyValue::Boolean(value)) => Ok(Condition::BooleanComparison {
                 attribute_name,
                 value,
             }),
             // Checking whether an attribute is equal to a numeric value
-            ("exact", AnyValue::Number(value)) => Ok(Condition::NumericComparison {
+            (MatchType::Exact, AnyValue::Number(value)) => Ok(Condition::NumericComparison {
                 operator: NumericOperator::Equal,
                 attribute_name,
                 value,
             }),
             // Checking whether an attribute is less than a numeric value
-            ("lt", AnyValue::Number(value)) => Ok(Condition::NumericComparison {
+            (MatchType::LessThan, AnyValue::Number(value)) => Ok(Condition::NumericComparison {
                 operator: NumericOperator::LessThan,
                 attribute_name,
                 value,
             }),
             // Checking whether an attribute is less than or equal to a numeric value
-            ("le", AnyValue::Number(value)) => Ok(Condition::NumericComparison {
+            (MatchType::LessThanOrEqual, AnyValue::Number(value)) => Ok(Condition::NumericComparison {
                 operator: NumericOperator::LessThanOrEqual,
                 attribute_name,
                 value,
             }),
             // Checking whether an attribute is greater than a numeric value
-            ("gt", AnyValue::Number(value)) => Ok(Condition::NumericComparison {
+            (MatchType::GreaterThan, AnyValue::Number(value)) => Ok(Condition::NumericComparison {
                 operator: NumericOperator::GreaterThan,
                 attribute_name,
                 value,
             }),
             // Checking whether an attribute is greater than or equal to a numeric value
-            ("ge", AnyValue::Number(value)) => Ok(Condition::NumericComparison {
+            (MatchType::GreaterThanOrEqual, AnyValue::Number(value)) => Ok(Condition::NumericComparison {
                 operator: NumericOperator::GreaterThanOrEqual,
                 attribute_name,
                 value,
             }),
             // Checking whether an attribute is equal to a version number
-            ("semver_eq", AnyValue::String(value)) => Ok(Condition::VersionComparison {
+            (MatchType::SemVerEqual, AnyValue::String(value)) => Ok(Condition::VersionComparison {
                 operator: VersionOperator::Equal,
                 attribute_name,
                 value: VersionValue::try_from(&*value).map_err(invalid_semver_error)?,
             }),
             // Checking whether an attribute is less than a version number
-            ("semver_lt", AnyValue::String(value)) => Ok(Condition::VersionComparison {
+            (MatchType::SemVerLessThan, AnyValue::String(value)) => Ok(Condition::VersionComparison {
                 operator: VersionOperator::LessThan,
                 attribute_name,
                 value: VersionValue::try_from(&*value).map_err(invalid_semver_error)?,
             }),
             // Checking whether an attribute is less than or equal to a version number
-            ("semver_le", AnyValue::String(value)) => Ok(Condition::VersionComparison {
+            (MatchType::SemVerLessThanOrEqual, AnyValue::String(value)) => Ok(Condition::VersionComparison {
                 operator: VersionOperator::LessThanOrEqual,
                 attribute_name,
                 value: VersionValue::try_from(&*value).map_err(invalid_semver_error)?,
             }),
             // Checking whether an attribute is greater than a version number
-            ("semver_gt", AnyValue::String(value)) => Ok(Condition::VersionComparison {
+            (MatchType::SemVerGreaterThan, AnyValue::String(value)) => Ok(Condition::VersionComparison {
                 operator: VersionOperator::GreaterThan,
                 attribute_name,
                 value: VersionValue::try_from(&*value).map_err(invalid_semver_error)?,
             }),
             // Checking whether an attribute is greater than or equal to a version number
-            ("semver_ge", AnyValue::String(value)) => Ok(Condition::VersionComparison {
+            (MatchType::SemVerGreaterThanOrEqual, AnyValue::String(value)) => Ok(Condition::VersionComparison {
                 operator: VersionOperator::GreaterThanOrEqual,
                 attribute_name,
                 value: VersionValue::try_from(&*value).map_err(invalid_semver_error)?,
@@ -258,7 +272,10 @@ mod tests {
     fn invalid_version() -> Result<(), Box<dyn Error>> {
         let json = r#"{"match":"semver_ge","name":"app_version","type":"custom_attribute","value":"one"}"#;
 
-        let error = serde_json::from_str::<Condition>(json).err().ok_or("Unexpected Result::Ok")?;
+        let error = serde_json::from_str::<Condition>(json)
+            .err()
+            .ok_or("Unexpected Result::Ok")?;
+
         let expected = r#"invalid value: string "one", expected valid semantic version number at line 1 column 82"#;
 
         assert_eq!(error.to_string(), expected);

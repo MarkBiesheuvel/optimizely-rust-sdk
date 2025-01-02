@@ -5,6 +5,7 @@ use std::collections::HashMap;
 use condition::Condition;
 
 mod condition;
+mod match_type;
 mod operator;
 mod value;
 
