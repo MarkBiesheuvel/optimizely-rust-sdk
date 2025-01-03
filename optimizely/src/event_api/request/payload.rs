@@ -1,10 +1,12 @@
 // External imports
+use error_stack::{Result, ResultExt};
 use serde::Serialize;
 use std::collections::HashMap;
 
+use crate::event_api::EventApiError;
+
 // Imports from super
 use super::Visitor;
-use crate::{Conversion, Decision};
 
 // Information regarding the SDK client
 const CLIENT_NAME: &str = "rust-sdk";
@@ -15,20 +17,20 @@ const ACTIVATE_EVENT_KEY: &str = "campaign_activated";
 
 #[derive(Serialize)]
 /// HTTP request payload to send to Event API
-pub struct Payload<'a> {
+pub struct Payload {
     account_id: String,
     visitors: Vec<Visitor>,
     enrich_decisions: bool,
     anonymize_ip: bool,
-    client_name: &'a str,
-    client_version: &'a str,
+    client_name: &'static str,
+    client_version: &'static str,
 }
 
-impl Payload<'_> {
+impl Payload {
     /// Construct an empty payload for a given account
-    pub fn new<T: Into<String>>(account_id: T) -> Payload<'static> {
+    pub fn new(account_id: String) -> Payload {
         Payload {
-            account_id: account_id.into(),
+            account_id: account_id,
             visitors: Vec::new(),
             enrich_decisions: true,
             anonymize_ip: true,
@@ -43,7 +45,7 @@ impl Payload<'_> {
     }
 
     /// Add a conversion event for a specific visitor to the payload
-    pub fn add_conversion_event(&mut self, mut visitor: Visitor, conversion: &Conversion) {
+    pub fn add_conversion_event(&mut self, mut visitor: Visitor, conversion: &crate::Conversion) {
         log::debug!("Adding conversion event to payload");
 
         // Add custom event
@@ -54,7 +56,7 @@ impl Payload<'_> {
     }
 
     /// Add a decision event for a specific visitor to the payload
-    pub fn add_decision_event(&mut self, mut visitor: Visitor, decision: &Decision) {
+    pub fn add_decision_event(&mut self, mut visitor: Visitor, decision: &crate::Decision) {
         log::debug!("Adding decision event to payload");
 
         // Use campaign_id as entity_id
@@ -68,19 +70,17 @@ impl Payload<'_> {
         let tags = HashMap::default();
 
         // Add campaign_activated event
-        let conversion = Conversion::new(ACTIVATE_EVENT_KEY, entity_id, properties, tags);
+        // TODO: rewrite this with event_api::request::Event
+        let conversion = crate::Conversion::new(ACTIVATE_EVENT_KEY, entity_id, properties, tags);
         visitor.add_event(&conversion);
 
         // Add to the list
         self.visitors.push(visitor);
     }
-}
 
-impl Drop for Payload<'_> {
-    fn drop(&mut self) {
-        log::debug!("Dropping Payload");
-
-        // If the Payload is dropped, make one last request to the Event API
-        self.send()
+    /// Convert the Payload struct to a JSON encoded text
+    pub fn to_string(&self) -> Result<String, EventApiError> {
+        // Convert to JSON document and dump as String
+        serde_json::to_string(self).change_context(EventApiError::FailedSerialize)
     }
 }

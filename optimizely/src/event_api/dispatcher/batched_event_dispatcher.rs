@@ -6,12 +6,11 @@ use std::thread;
 use super::EventDispatcher;
 
 // Imports from crate
-use crate::event_api::request::{Payload, Visitor};
-use crate::{client::UserContext, Conversion, Decision};
+use crate::event_api::request::{Request, Visitor};
+use crate::{client::UserContext, datafile::Datafile, Conversion, Decision};
 
 // Structure used to send message between threads
 struct ThreadMessage {
-    account_id: String,
     visitor: Visitor,
     event: EventEnum,
 }
@@ -29,70 +28,49 @@ const DEFAULT_BATCH_THRESHOLD: usize = 10;
 ///
 /// Inspiration from [Spawn threads and join in destructor](https://users.rust-lang.org/t/spawn-threads-and-join-in-destructor/1613/9)
 pub struct BatchedEventDispatcher {
-    thread_handle: Option<thread::JoinHandle<()>>,
-    transmitter: Option<mpsc::Sender<ThreadMessage>>,
+    receiver_thread: Option<thread::JoinHandle<()>>,
+    transmitter_channel: Option<mpsc::Sender<ThreadMessage>>,
 }
 
-impl Default for BatchedEventDispatcher {
+impl BatchedEventDispatcher {
     /// Constructor for a new batched event dispatcher
-    fn default() -> BatchedEventDispatcher {
-        let (transmitter, receiver) = mpsc::channel::<ThreadMessage>();
+    pub fn new(datafile: &Datafile) -> Self {
+        // Create the request buffer using the datafile
+        let mut request = Request::new(datafile);
+
+        // Create sender and receiver for thread
+        let (transmitter_channel, receiver_channel) = mpsc::channel::<ThreadMessage>();
 
         // Receiver logic in separate thread
-        let thread_handle = thread::spawn(move || {
-            let mut payload_option = Option::None;
-
+        let receiver_thread = thread::spawn(move || {
             // Keep receiving new messages from the main thread
-            for message in receiver.iter() {
+            for message in receiver_channel.iter() {
                 // Deconstruct the message
-                let ThreadMessage {
-                    account_id,
-                    visitor,
-                    event,
-                } = message;
-
-                // Use existing payload or create new one
-                let payload = payload_option.get_or_insert_with(|| Payload::new(account_id));
+                let ThreadMessage { visitor, event } = message;
 
                 // the corresponding event to the payload
                 match event {
                     EventEnum::Conversion(conversion) => {
-                        payload.add_conversion_event(visitor, &conversion);
+                        request.add_conversion_event(visitor, &conversion);
                     }
                     EventEnum::Decision(decision) => {
-                        payload.add_decision_event(visitor, &decision);
+                        request.add_decision_event(visitor, &decision);
                     }
                 }
 
-                // Send payload if reached the batch threshold
-                if let Some(payload) = payload_option.take_if(|payload| payload.size() >= DEFAULT_BATCH_THRESHOLD) {
+                // Send request if reached the batch threshold
+                if request.buffer_size() >= DEFAULT_BATCH_THRESHOLD {
                     log::debug!("Reached DEFAULT_BATCH_THRESHOLD");
-                    payload.send();
+
+                    // Sending request
+                    request.send();
                 }
             }
         });
 
         BatchedEventDispatcher {
-            thread_handle: Some(thread_handle),
-            transmitter: Some(transmitter),
-        }
-    }
-}
-
-impl Drop for BatchedEventDispatcher {
-    fn drop(&mut self) {
-        // Take the transmitter_decision and replace it with None
-        if let Some(tx) = self.transmitter.take() {
-            // Drop the transmitter first, so the receiver in the thread will eventually stop
-            drop(tx);
-        }
-
-        // Take the thread_handle and replace it with None
-        if let Some(handle) = self.thread_handle.take() {
-            // Wait until the thread has send the last batch
-            let result = handle.join();
-            // Ignore result
-            drop(result);
+            receiver_thread: Some(receiver_thread),
+            transmitter_channel: Some(transmitter_channel),
         }
     }
 }
@@ -107,22 +85,38 @@ impl EventDispatcher for BatchedEventDispatcher {
     }
 }
 
+impl Drop for BatchedEventDispatcher {
+    fn drop(&mut self) {
+        // Take the transmitter channel and replace it with None
+        if let Some(channel) = self.transmitter_channel.take() {
+            // Drop the transmitter channel first, so the receiver channel in the thread will stop receiving messages
+            drop(channel);
+        }
+
+        // Take the receiver thread and replace it with None
+        if let Some(thread) = self.receiver_thread.take() {
+            // Wait until the thread has send the last batch
+            let result = thread.join();
+
+            // Log thread error
+            if result.is_err() {
+                log::error!("Failed to wait for receiver thread");
+            }
+        }
+    }
+}
+
 impl BatchedEventDispatcher {
     fn transmit(&self, user_context: &UserContext, event: EventEnum) {
         // Create a String so the value can be owned by the other thread.
-        let account_id = user_context.client().datafile().account_id().into();
         let visitor = Visitor::from(user_context);
 
         // Build message
-        let message = ThreadMessage {
-            account_id,
-            visitor,
-            event,
-        };
+        let message = ThreadMessage { visitor, event };
 
         // Send message to thread
-        match &self.transmitter {
-            Some(tx) => match tx.send(message) {
+        match &self.transmitter_channel {
+            Some(channel) => match channel.send(message) {
                 Ok(_) => {
                     log::debug!("Successfully sent message to thread");
                 }

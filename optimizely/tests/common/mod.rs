@@ -82,16 +82,16 @@ pub struct TestContext {
 
 // A setup function used in multiple tests
 pub fn setup() -> Result<TestContext, Box<dyn Error>> {
-    // Create a struct to store events
-    let event_store = EventStore::default();
-
-    // Clone reference to the lists
-    let conversions = event_store.conversions.clone();
-    let decisions = event_store.decisions.clone();
+    // Create empty lists
+    let conversions = SyncList::<Conversion>::default();
+    let decisions = SyncList::<Decision>::default();
 
     // Build client
     let client = Client::from_local_datafile(FILE_PATH)?
-        .with_event_dispatcher(event_store)
+        .with_event_dispatcher(|_| EventStore {
+            conversions: conversions.clone(),
+            decisions: decisions.clone(),
+        })
         .initialize();
 
     Ok(TestContext {

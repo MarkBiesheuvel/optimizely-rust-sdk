@@ -1,3 +1,5 @@
+use std::any::Any;
+
 // Imports from super
 use crate::{client::UserContext, Conversion, Decision};
 
@@ -5,7 +7,7 @@ use crate::{client::UserContext, Conversion, Decision};
 ///
 /// It is possible to make a custom event dispatcher by implementing this trait
 /// TODO: add example again
-pub trait EventDispatcher: Send + Sync {
+pub trait EventDispatcher: Send + Sync + Any {
     /// Send conversion event to destination
     fn send_conversion_event(&self, user_context: &UserContext, conversion: Conversion);
 

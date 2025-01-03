@@ -18,9 +18,8 @@ use crate::event_api::{EventDispatcher, SimpleEventDispatcher};
 ///
 /// // Initialize Optimizely client using local datafile and custom event dispatcher
 /// let file_path = "../datafiles/sandbox.json";
-/// let event_dispatcher = BatchedEventDispatcher::default();
 /// let optimizely_client = Client::from_local_datafile(file_path)?
-///     .with_event_dispatcher(event_dispatcher)
+///     .with_event_dispatcher(BatchedEventDispatcher::new)
 ///     .initialize();
 ///
 /// # Ok::<(), Box<dyn std::error::Error>>(())
@@ -93,9 +92,29 @@ impl UninitializedClient {
     }
 
     /// Use a custom event dispatcher
+    ///
+    /// This method accepts a function that can be used to create an EventDispatcher
+    ///
+    /// If you implement your own EventDispatcher, you could write a method new with the following signature:
+    /// `fn new(datafile: &Datafile) -> Self;`
+    /// And call this method like so:
+    /// `.with_event_dispatcher(BatchedEventDispatcher::new)`
+    ///
+    /// Or you could call this method with an anonymous function like so:
+    /// `.with_event_dispatcher(|_| EventStore::default())`
     #[cfg(feature = "online")]
-    pub fn with_event_dispatcher(mut self, event_dispatcher: impl EventDispatcher + 'static) -> UninitializedClient {
-        self.event_dispatcher = Some(Box::new(event_dispatcher));
+    pub fn with_event_dispatcher<F, D>(mut self, dispatcher: F) -> UninitializedClient
+    where
+        F: FnOnce(&Datafile) -> D,
+        D: EventDispatcher,
+    {
+        // Create a new dispatcher of type <D>
+        let dispatcher = dispatcher(&self.datafile);
+
+        // Store in a Box<D>, since different EventDispatcher implementations are different types
+        self.event_dispatcher = Some(Box::new(dispatcher));
+
+        // Return self, so can chain other functions
         self
     }
 
@@ -103,13 +122,18 @@ impl UninitializedClient {
 
     /// Initialize the client
     pub fn initialize(self) -> Client {
+        let datafile = self.datafile;
+
         // Select default for any options that were not specified
+        let event_dispatcher = match self.event_dispatcher {
+            Some(event_dispatcher) => event_dispatcher,
+            None => Box::new(SimpleEventDispatcher::new(&datafile)),
+        };
+
         Client {
-            datafile: self.datafile,
+            datafile: datafile,
             #[cfg(feature = "online")]
-            event_dispatcher: self
-                .event_dispatcher
-                .unwrap_or_else(|| Box::<SimpleEventDispatcher>::default()),
+            event_dispatcher,
         }
     }
 }

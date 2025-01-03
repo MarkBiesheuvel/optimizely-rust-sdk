@@ -39,7 +39,7 @@ fn random_category() -> &'static str {
 fn main() -> Result<(), Box<dyn Error>> {
     // Initiate client using SDK key and batched event dispatcher
     let client = Client::from_sdk_key(SDK_KEY)?
-        .with_event_dispatcher(BatchedEventDispatcher::default())
+        .with_event_dispatcher(BatchedEventDispatcher::new)
         .initialize();
 
     // Not super accurate interval, but fine for this example

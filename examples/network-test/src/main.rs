@@ -2,6 +2,7 @@ use env_logger::Target;
 use log::LevelFilter;
 use optimizely::{event_api::BatchedEventDispatcher, Client};
 use std::error::Error;
+use std::{thread, time};
 
 const SDK_KEY: &str = "KVpGWnzPGKvvQ8yeEWmJZ";
 
@@ -14,17 +15,22 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // Initiate client using SDK key and batched event dispatcher
     let client = Client::from_sdk_key(SDK_KEY)?
-        .with_event_dispatcher(BatchedEventDispatcher::default())
+        .with_event_dispatcher(BatchedEventDispatcher::new)
         .initialize();
 
     let flag_key = "buy_button";
 
-    for i in 0..20 {
+    // Time between iteration
+    let duration = time::Duration::from_millis(100);
+
+    for i in 0..24 {
         let user_id = format!("user{}", i);
         let mut user_context = client.create_user_context(&user_id);
         user_context.set_attribute("app_version", "0.5.0");
         user_context.set_attribute("country", "nl");
-        let _decision = user_context.decide(flag_key);
+        let decision = user_context.decide(flag_key);
+        thread::sleep(duration);
+        drop(decision);
     }
 
     Ok(())
