@@ -1,25 +1,22 @@
 // External imports
 use thiserror::Error;
 
-/// This type represents all possible errors that can occur when initializing the client
+/// Representation of client initialization errors.
 #[derive(Error, Debug, PartialEq)]
 pub enum ClientError {
-    #[doc(hidden)]
-    #[error("Cannot build Client without given Datafile")]
-    DatafileMissing,
-    #[doc(hidden)]
+    /// Failed to make request to cdn.optimizely.com
     #[error("Failed to make request to cdn.optimizely.com")]
     FailedRequest,
-    #[doc(hidden)]
+    /// Failed to decode response from cdn.optimizely.com
     #[error("Failed to decode response from cdn.optimizely.com")]
     FailedResponse,
-    #[doc(hidden)]
+    /// Failed to open local datafile
     #[error("Failed to open local datafile")]
     FailedFileOpen,
-    #[doc(hidden)]
+    /// Failed to read from local datafile
     #[error("Failed to read from local datafile")]
     FailedFileRead,
-    #[doc(hidden)]
+    /// Invalid Datafile
     #[error("Invalid Datafile")]
     InvalidDatafile,
 }

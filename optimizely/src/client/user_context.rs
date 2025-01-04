@@ -17,7 +17,7 @@ const HASH_SEED: u32 = 1;
 /// Ranges are specified between 0 and 10_000
 const MAX_OF_RANGE: f64 = 10_000_f64;
 
-/// User specific context
+/// A user-specific contenxt of the SDK client
 ///
 /// ```
 /// use optimizely::{Client, decision::DecideOptions};

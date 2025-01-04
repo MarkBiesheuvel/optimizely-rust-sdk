@@ -10,20 +10,9 @@ use crate::datafile::Datafile;
 #[cfg(feature = "online")]
 use crate::event_api::{EventDispatcher, SimpleEventDispatcher};
 
-/// An intermediate struct that is returned when building a new Client
+/// Intermediate struct that is used to initialize a new [Client].
 ///
-/// ```
-/// use optimizely::Client;
-/// use optimizely::event_api::BatchedEventDispatcher;
-///
-/// // Initialize Optimizely client using local datafile and custom event dispatcher
-/// let file_path = "../datafiles/sandbox.json";
-/// let optimizely_client = Client::from_local_datafile(file_path)?
-///     .with_event_dispatcher(BatchedEventDispatcher::new)
-///     .initialize();
-///
-/// # Ok::<(), Box<dyn std::error::Error>>(())
-/// ```
+/// See [super] for examples.
 pub struct UninitializedClient {
     datafile: Datafile,
     _default_decide_options: Option<()>,

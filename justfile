@@ -19,3 +19,6 @@ dry-run-publish:
 
 run example:
   cd examples/{{example}} && cargo run
+
+pdf:
+  wkhtmltopdf $(find target/doc/optimizely -type f -name '*.html' -printf '%d http://[::1]/optimizely-rust-sdk/%p\n' | sort -n | cut -d' ' -f2- ) target/doc/optimizely-rust-sdk.pdf

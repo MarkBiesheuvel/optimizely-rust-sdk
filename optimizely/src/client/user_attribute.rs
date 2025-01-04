@@ -3,12 +3,13 @@ use std::convert::From;
 use crate::datafile;
 
 /// An attribute of the user.
+///
+/// Unfortunately, attributes in Optimizely do not have a type.
+/// Types are specified in the audience condition, however there is no guarantee that the same attribute will be compared to the same type in every audience condition.
+/// The Event API expects all attributes to be a text, hence why we always store the value as a String
 pub struct UserAttribute {
     id: String,
     key: String,
-    // Unfortunately, attributes in Optimizely do not have a type.
-    // Types are specified in the audience condition, however there is no guarantee that the same attribute will be compared to the same type in every audience condition.
-    // The Event API expects all attributes to be a text, hence why we always store the value as a String
     value: String,
 }
 
@@ -39,7 +40,7 @@ impl UserAttribute {
 }
 
 impl From<(&datafile::Attribute, String)> for UserAttribute {
-    /// Create user attribute by adding a value to a (datafile) attribute
+    /// Create user attribute by combining a value and a `datafile::Attribute`
     fn from((attribute, value): (&datafile::Attribute, String)) -> UserAttribute {
         UserAttribute {
             id: attribute.id().into(),

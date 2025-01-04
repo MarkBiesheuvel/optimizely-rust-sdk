@@ -1,4 +1,45 @@
-//! Entrypoint of the SDK
+//! The interface that enables you to interact with feature flags.
+//!
+//! # Initialization
+//!
+//! An SDK client has one required property: a [Datafile] and a few additional optional properties.
+//!
+//! Therefore, you first call one of the `Client::from_*` functions, which returns an [UninitializedClient].
+//! Then, you can than add any number of optional properties using the `UninitializedClient::with_*` methods.
+//! Finally, you complete the SDK client by calling `UninitializedClient::initialize`.
+//!
+//! # Examples
+//!
+//! Creating a simple SDK client.
+//! ```
+//! use optimizely::Client;
+//! # const SDK_KEY: &str = "KVpGWnzPGKvvQ8yeEWmJZ";
+//!
+//! let client = Client::from_sdk_key(SDK_KEY)?
+//!     .initialize();
+//! # Ok::<(), Box<dyn std::error::Error>>(())
+//! ```
+//!
+//! Creating an SDK client using a local file
+//! ```
+//! use optimizely::Client;
+//!
+//! let client = Client::from_local_datafile("../datafiles/sandbox.json")?
+//!     .initialize();
+//! # Ok::<(), Box<dyn std::error::Error>>(())
+//! ```
+//!
+//! Creating an SDK client with the batched event dispatcher
+//! ```
+//! use optimizely::{event_api::BatchedEventDispatcher, Client};
+//! # const SDK_KEY: &str = "KVpGWnzPGKvvQ8yeEWmJZ";
+//!
+//! // Initiate client using SDK key and batched event dispatcher
+//! let client = Client::from_sdk_key(SDK_KEY)?
+//!     .with_event_dispatcher(BatchedEventDispatcher::new)
+//!     .initialize();
+//! # Ok::<(), Box<dyn std::error::Error>>(())
+//! ```
 
 // Imports from crate
 use crate::datafile::Datafile;
@@ -16,25 +57,9 @@ mod initialization;
 mod user_attribute;
 mod user_context;
 
-/// SDK client to use Optimizely Feature Experimentation
+/// SDK client to interact with feature flags.
 ///
-/// ```
-/// use optimizely::Client;
-/// #
-/// # let file_path = "../datafiles/sandbox.json";
-/// # let user_id = "123abc789xyz";
-///
-/// // Initialize Optimizely client using local datafile
-/// let optimizely_client = Client::from_local_datafile(file_path)?
-///     .initialize();
-///
-/// // Use methods of client struct
-/// let account_id = optimizely_client.datafile().account_id();
-/// let revision = optimizely_client.datafile().revision();
-/// let user_context = optimizely_client.create_user_context(user_id);
-///
-/// # Ok::<(), Box<dyn std::error::Error>>(())
-/// ```
+/// See [super] for examples.
 pub struct Client {
     datafile: Datafile,
     #[cfg(feature = "online")]
