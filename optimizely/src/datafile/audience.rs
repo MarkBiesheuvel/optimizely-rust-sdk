@@ -14,8 +14,15 @@ pub struct Audience {
     id: String,
     #[allow(dead_code)]
     name: String,
-    #[allow(dead_code)]
-    conditions: Condition,
+    #[serde(rename = "conditions")]
+    condition: Condition,
+}
+
+impl Audience {
+    /// Return the condition of this audience
+    pub fn condition(&self) -> &Condition {
+        &self.condition
+    }
 }
 
 #[derive(Debug)]

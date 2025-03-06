@@ -189,7 +189,19 @@ impl UserContext<'_> {
             let experiment = self.client.datafile().experiment(experiment_id);
 
             match experiment {
-                Some(experiment) => self.decide_variation_for_experiment(experiment),
+                Some(experiment) => {
+                    let audience_ids = experiment.audience_ids();
+
+                    if audience_ids.len() == 0
+                        || audience_ids
+                            .iter()
+                            .any(|audience_id| self.does_match_audience(audience_id))
+                    {
+                        self.decide_variation_for_experiment(experiment)
+                    } else {
+                        None
+                    }
+                }
                 None => None,
             }
         });
@@ -245,5 +257,21 @@ impl UserContext<'_> {
             // Combine it with the experiment
             .map(|variation| Some((experiment, variation)))
             .flatten()
+    }
+
+    fn does_match_audience<S>(&self, audience_id: S) -> bool
+    where
+        S: AsRef<str>,
+    {
+        // Retrieve the audience from the datafile
+        let audience = match self.client.datafile().audience(audience_id.as_ref()) {
+            Some(audience) => audience,
+            None => {
+                // Not found in datafile, so user does not match
+                return false;
+            }
+        };
+
+        audience.condition().does_match(&self.user_attributes)
     }
 }

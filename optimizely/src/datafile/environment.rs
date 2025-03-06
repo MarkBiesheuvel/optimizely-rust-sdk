@@ -74,4 +74,8 @@ impl Environment {
     pub fn attributes(&self) -> &AttributeMap {
         &self.attributes
     }
+
+    pub fn audiences(&self) -> &AudienceMap {
+        &self.audiences
+    }
 }

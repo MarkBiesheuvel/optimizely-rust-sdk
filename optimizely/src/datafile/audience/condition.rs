@@ -1,11 +1,11 @@
-// External imports
-use serde::de::{Error, MapAccess, SeqAccess, Visitor};
-use serde::{Deserialize, Deserializer};
-use std::fmt;
-
 use super::match_type::MatchType;
 use super::operator::{NumericOperator, StringOperator};
 use super::value::{AnyValue, NumericValue};
+use crate::client::UserAttribute;
+use serde::de::{Error, MapAccess, SeqAccess, Visitor};
+use serde::{Deserialize, Deserializer};
+use std::collections::HashMap;
+use std::fmt;
 
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
@@ -41,6 +41,49 @@ pub enum Condition {
     Exists {
         attribute_name: AttributeName,
     },
+}
+
+impl Condition {
+    /// Whether the user attributes match the condition or not
+    pub fn does_match(&self, user_attributes: &HashMap<String, UserAttribute>) -> bool {
+        match self {
+            Condition::AndSequence(sequence) => {
+                // Combine sequence with AND
+                sequence
+                    .iter()
+                    .all(|condition| condition.does_match(user_attributes))
+            }
+            Condition::OrSequence(sequence) => {
+                // Combine sequence with OR
+                sequence
+                    .iter()
+                    .any(|condition| condition.does_match(user_attributes))
+            }
+            Condition::StringComparison {
+                attribute_name,
+                operator,
+                value,
+            } => {
+                // Retrieve value
+                user_attributes
+                    .get(attribute_name)
+                    .map(|user_attribute| {
+                        // Apply operator
+                        match operator {
+                            StringOperator::Equal => value == user_attribute.value(),
+                            StringOperator::Contains => user_attribute.value().contains(value),
+                            _ => {
+                                todo!("Implement other string operator types");
+                            }
+                        }
+                    })
+                    .unwrap_or(false)
+            }
+            _ => {
+                todo!("Implement other condition types!");
+            }
+        }
+    }
 }
 
 // Advanced serde Deserialize

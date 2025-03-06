@@ -109,3 +109,23 @@ fn invalid_flag() -> Result<(), Box<dyn Error>> {
 
     Ok(())
 }
+
+#[test]
+fn flag_with_audience() -> Result<(), Box<dyn Error>> {
+    let ctx = setup()?;
+    let flag_key = "navbar";
+
+    // Create user context
+    let mut user_context = ctx.client.create_user_context("user1");
+
+    // Since no attribute is set, the user should see the default
+    assert_eq!(user_context.decide(flag_key).variation_key(), "complete");
+
+    // Update user attribute
+    user_context.set_attribute("currentUri", "/checkout");
+
+    // Since the attribute now matches, the user should see this variation
+    assert_eq!(user_context.decide(flag_key).variation_key(), "hidden");
+
+    Ok(())
+}

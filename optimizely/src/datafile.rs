@@ -5,7 +5,7 @@ use error_stack::{Result, ResultExt};
 
 // Relative imports of sub modules
 pub(crate) use attribute::{Attribute, AttributeMap};
-use audience::AudienceMap;
+use audience::{Audience, AudienceMap};
 use environment::Environment;
 pub use error::DatafileError;
 pub(crate) use event::{Event, EventMap};
@@ -83,5 +83,10 @@ impl Datafile {
     /// Get the attribute with the given key
     pub fn attribute(&self, attribute_key: &str) -> Option<&Attribute> {
         self.0.attributes().get(attribute_key)
+    }
+
+    /// Get the audience with the given audience ID
+    pub fn audience(&self, audience_id: &str) -> Option<&Audience> {
+        self.0.audiences().get(audience_id)
     }
 }

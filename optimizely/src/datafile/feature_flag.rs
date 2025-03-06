@@ -21,7 +21,7 @@ impl FeatureFlag {
         &self.rollout_id
     }
 
-    pub fn experiments_ids(&self) -> &Vec<String> {
+    pub fn experiments_ids(&self) -> &[String] {
         &self.experiment_ids
     }
 }

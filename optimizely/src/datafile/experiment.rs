@@ -13,6 +13,7 @@ pub struct Experiment {
     #[serde(rename = "layerId")]
     campaign_id: String,
     traffic_allocation: TrafficAllocation,
+    audience_ids: Vec<String>, // TODO: use audienceConditions instead of audienceIds
     variations: VariationMap,
 }
 
@@ -31,6 +32,10 @@ impl Experiment {
 
     pub fn variation(&self, variation_id: &str) -> Option<&Variation> {
         self.variations.get(variation_id)
+    }
+
+    pub fn audience_ids(&self) -> &[String] {
+        &self.audience_ids
     }
 }
 
