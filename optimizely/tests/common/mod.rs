@@ -22,30 +22,22 @@ pub const FILE_PATH: &str = "../datafiles/sandbox.json";
 pub const REVISION: u32 = 544;
 
 // In-memory thread-safe list of any type
-pub struct SyncList<T>(Arc<RwLock<Vec<T>>>);
+#[derive(Default)]
+pub struct Counter(Arc<RwLock<usize>>);
 
-impl<T> Default for SyncList<T> {
-    fn default() -> Self {
-        Self(Arc::new(RwLock::new(Vec::default())))
-    }
-}
-
-impl<T> SyncList<T> {
-    fn add(&self, item: T) {
+impl Counter {
+    fn increment(&self) {
         // Acquire lock on the RwLock
-        if let Ok(mut vec) = self.0.write() {
-            // Add item to the list
-            vec.push(item);
+        if let Ok(mut value) = self.0.write() {
+            // Increment value
+            *value += 1;
         } else {
             // Error handling not implemented in this example
         }
     }
 
-    pub fn len(&self) -> usize {
-        match self.0.read() {
-            Ok(vec) => vec.len(),
-            Err(_) => 0,
-        }
+    pub fn value(&self) -> usize {
+        self.0.read().map(|value| *value).unwrap_or_default()
     }
 
     fn clone(&self) -> Self {
@@ -56,18 +48,18 @@ impl<T> SyncList<T> {
 // Struct that holds conversion and decisions in memory and implement the EventDispatcher trait
 #[derive(Default)]
 pub struct EventStore {
-    conversions: SyncList<Conversion>,
-    decisions: SyncList<Decision>,
+    conversion_counter: Counter,
+    decision_counter: Counter,
 }
 
 // Implementing the EventDispatcher using the interior mutability pattern
 impl EventDispatcher for EventStore {
-    fn send_conversion_event(&self, _user_context: &UserContext, conversion: Conversion) {
-        self.conversions.add(conversion);
+    fn send_conversion_event(&self, _user_context: &UserContext, _conversion: Conversion) {
+        self.conversion_counter.increment();
     }
 
-    fn send_decision_event(&self, _user_context: &UserContext, decision: Decision) {
-        self.decisions.add(decision);
+    fn send_decision_event(&self, _user_context: &UserContext, _decision: Decision) {
+        self.decision_counter.increment();
     }
 }
 
@@ -76,27 +68,27 @@ impl EventDispatcher for EventStore {
 // - a list of events that was send to the EventDispatcher
 pub struct TestContext {
     pub client: Client,
-    pub conversions: SyncList<Conversion>,
-    pub decisions: SyncList<Decision>,
+    pub conversion_counter: Counter,
+    pub decision_counter: Counter,
 }
 
 // A setup function used in multiple tests
 pub fn setup() -> Result<TestContext, Box<dyn Error>> {
-    // Create empty lists
-    let conversions = SyncList::<Conversion>::default();
-    let decisions = SyncList::<Decision>::default();
+    // Create event store
+    let event_store = EventStore::default();
+
+    // Clone the counters
+    let conversion_counter = event_store.conversion_counter.clone();
+    let decision_counter = event_store.decision_counter.clone();
 
     // Build client
     let client = Client::from_local_datafile(FILE_PATH)?
-        .with_event_dispatcher(|_| EventStore {
-            conversions: conversions.clone(),
-            decisions: decisions.clone(),
-        })
+        .with_event_dispatcher(|_datafile| event_store)
         .initialize();
 
     Ok(TestContext {
         client,
-        conversions,
-        decisions,
+        conversion_counter,
+        decision_counter,
     })
 }

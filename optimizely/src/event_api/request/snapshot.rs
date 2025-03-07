@@ -2,20 +2,21 @@
 use serde::Serialize;
 
 // Imports from super
-use super::{Decision, Event};
+use super::{ConversionEvent, DecisionEvent};
 
 #[derive(Serialize, Default)]
 pub struct Snapshot {
-    decisions: Vec<Decision>,
-    events: Vec<Event>,
+    decisions: Vec<DecisionEvent>,
+    #[serde(rename = "events")]
+    conversions: Vec<ConversionEvent>,
 }
 
 impl Snapshot {
-    pub fn add_decision(&mut self, decision: &crate::Decision) {
-        self.decisions.push(Decision::from(decision));
+    pub fn add_decision_event(&mut self, decision: DecisionEvent) {
+        self.decisions.push(decision);
     }
 
-    pub fn add_event(&mut self, conversion: &crate::Conversion) {
-        self.events.push(Event::from(conversion));
+    pub fn add_conversion_event(&mut self, event: ConversionEvent) {
+        self.conversions.push(event);
     }
 }

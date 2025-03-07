@@ -8,48 +8,44 @@ mod decide_options;
 
 /// Decision for a specific user and feature flag
 #[derive(Debug, Clone)]
-pub struct Decision {
-    flag_key: String,
-    campaign_id: String,
-    experiment_id: String,
-    variation_id: String,
-    variation_key: String,
+pub struct Decision<'a, 'b> {
+    flag_key: &'a str,
+    campaign_id: &'b str,
+    experiment_id: &'b str,
+    variation_id: &'b str,
+    variation_key: &'b str,
     enabled: bool,
 }
 
-impl Decision {
-    fn new<T: Into<String>>(
-        flag_key: T, campaign_id: T, experiment_id: T, variation_id: T, variation_key: T, enabled: bool,
-    ) -> Decision {
+impl Decision<'_, '_> {
+    pub(crate) fn from<'a, 'b>(
+        flag_key: &'a str, experiment: &'b datafile::Experiment, variation: &'b datafile::Variation,
+    ) -> Decision<'a, 'b> {
         Decision {
-            flag_key: flag_key.into(),
-            campaign_id: campaign_id.into(),
-            experiment_id: experiment_id.into(),
-            variation_id: variation_id.into(),
-            variation_key: variation_key.into(),
-            enabled,
+            flag_key,
+            campaign_id: experiment.campaign_id(),
+            experiment_id: experiment.id(),
+            variation_id: variation.id(),
+            variation_key: variation.key(),
+            enabled: variation.is_feature_enabled(),
         }
     }
 
-    pub(crate) fn from_datafile(
-        flag: &datafile::FeatureFlag, experiment: &datafile::Experiment, variation: &datafile::Variation,
-    ) -> Decision {
-        Decision::new(
-            flag.key(),
-            experiment.campaign_id(),
-            experiment.id(),
-            variation.id(),
-            variation.key(),
-            variation.is_feature_enabled(),
-        )
+    pub(crate) fn off<'a>(flag_key: &'a str) -> Decision<'a, 'static> {
+        Decision {
+            flag_key: flag_key,
+            campaign_id: "",
+            experiment_id: "",
+            variation_id: "",
+            variation_key: "off",
+            enabled: false,
+        }
     }
+}
 
-    pub(crate) fn off(flag_key: &str) -> Decision {
-        Decision::new(flag_key, "", "", "", "off", false)
-    }
-
+impl<'a, 'b> Decision<'a, 'b> {
     /// Get the flag key for which this decision was made
-    pub fn flag_key(&self) -> &str {
+    pub fn flag_key(&self) -> &'a str {
         &self.flag_key
     }
 
@@ -58,23 +54,23 @@ impl Decision {
         self.enabled
     }
 
-    /// Get the variation key that was decided
-    pub fn variation_key(&self) -> &str {
-        &self.variation_key
-    }
-
     /// Get the campaign ID
-    pub fn campaign_id(&self) -> &str {
+    pub fn campaign_id(&self) -> &'b str {
         &self.campaign_id
     }
 
     /// Get the experiment ID
-    pub fn experiment_id(&self) -> &str {
+    pub fn experiment_id(&self) -> &'b str {
         &self.experiment_id
     }
 
     /// Get the variation ID that was decided
-    pub fn variation_id(&self) -> &str {
+    pub fn variation_id(&self) -> &'b str {
         &self.variation_id
+    }
+
+    /// Get the variation key that was decided
+    pub fn variation_key(&self) -> &'b str {
+        &self.variation_key
     }
 }

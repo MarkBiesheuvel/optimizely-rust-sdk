@@ -17,7 +17,7 @@ const HASH_SEED: u32 = 1;
 /// Ranges are specified between 0 and 10_000
 const MAX_OF_RANGE: f64 = 10_000_f64;
 
-/// A user-specific contenxt of the SDK client
+/// A user-specific context of the SDK client
 ///
 /// ```
 /// use optimizely::{Client, decision::DecideOptions};
@@ -120,13 +120,13 @@ impl UserContext<'_> {
     }
 
     /// Decide which variation to show to a user
-    pub fn decide(&self, flag_key: &str) -> Decision {
+    pub fn decide<'a, 'b>(&'b self, flag_key: &'a str) -> Decision<'a, 'b> {
         let options = DecideOptions::default();
         self.decide_with_options(flag_key, &options)
     }
 
     /// Decide which variation to show to a user
-    pub fn decide_with_options(&self, flag_key: &str, options: &DecideOptions) -> Decision {
+    pub fn decide_with_options<'a, 'b>(&'b self, flag_key: &'a str, options: &DecideOptions) -> Decision<'a, 'b> {
         // Retrieve Flag
         let flag = match self.client.datafile().flag(flag_key) {
             Some(flag) => flag,
@@ -144,7 +144,7 @@ impl UserContext<'_> {
         let decision = match self.decide_variation_for_flag(flag, &mut send_decision) {
             Some((experiment, variation)) => {
                 // Unpack the variation and create Decision struct
-                Decision::from_datafile(flag, experiment, variation)
+                Decision::from(flag_key, experiment, variation)
             }
             None => {
                 // No experiment or rollout found, or user does not qualify for any
@@ -156,16 +156,16 @@ impl UserContext<'_> {
         if send_decision {
             self.client
                 .event_dispatcher()
-                .send_decision_event(&self, decision.clone());
+                .send_decision_event(&self, decision.clone()); // TODO: replace with reference
         }
 
         // Return
         decision
     }
 
-    fn decide_variation_for_flag(
-        &self, flag: &FeatureFlag, send_decision: &mut bool,
-    ) -> Option<(&Experiment, &Variation)> {
+    fn decide_variation_for_flag<'a>(
+        &'a self, flag: &'a FeatureFlag, send_decision: &mut bool,
+    ) -> Option<(&'a Experiment, &'a Variation)> {
         // Find first Experiment for which this user qualifies
         let result = flag.experiments_ids().iter().find_map(|experiment_id| {
             let experiment = self.client.datafile().experiment(experiment_id);

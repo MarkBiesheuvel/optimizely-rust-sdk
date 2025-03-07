@@ -2,10 +2,10 @@
 use serde::Serialize;
 
 // Imports from crate
-use crate::{client::UserContext, Conversion, Decision};
+use crate::client::UserContext;
 
 // Imports from super
-use super::{Attribute, Snapshot};
+use super::{Attribute, ConversionEvent, DecisionEvent, Snapshot};
 
 #[derive(Serialize)]
 pub struct Visitor {
@@ -23,12 +23,12 @@ impl Visitor {
         }
     }
 
-    pub fn add_decision(&mut self, decision: &Decision) {
-        self.snapshots[0].add_decision(decision);
+    pub fn add_decision_event(&mut self, decision: DecisionEvent) {
+        self.snapshots[0].add_decision_event(decision);
     }
 
-    pub fn add_event(&mut self, conversion: &Conversion) {
-        self.snapshots[0].add_event(conversion);
+    pub fn add_conversion_event(&mut self, event: ConversionEvent) {
+        self.snapshots[0].add_conversion_event(event);
     }
 }
 

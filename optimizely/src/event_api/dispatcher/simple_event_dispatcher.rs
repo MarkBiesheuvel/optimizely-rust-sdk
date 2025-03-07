@@ -4,7 +4,7 @@ use std::sync::RwLock;
 use super::EventDispatcher;
 
 // Imports from crate
-use crate::event_api::request::{Request, Visitor};
+use crate::event_api::request::{ConversionEvent, DecisionEvent, Request, Visitor};
 use crate::{client::UserContext, Conversion, Decision};
 
 /// Implementation of the EventDispatcher trait that makes an HTTP request for every event
@@ -40,8 +40,10 @@ impl EventDispatcher for SimpleEventDispatcher {
         // Create new request::Visitor
         let visitor = Visitor::from(user_context);
 
+        // Convert from optimizely::Conversion to optimizely::event_api::request::ConversionEvent
+        let event = ConversionEvent::from(&conversion);
         // Add single conversion
-        request.add_conversion_event(visitor, &conversion);
+        request.add_conversion_event(visitor, event);
 
         // Dispatch single conversion
         request.send()
@@ -62,8 +64,10 @@ impl EventDispatcher for SimpleEventDispatcher {
         // Create new request::Visitor
         let visitor = Visitor::from(user_context);
 
+        // Convert from optimizely::Decision to optimizely::event_api::request::DecisionEvent
+        let decision = DecisionEvent::from(&decision);
         // Add single decision
-        request.add_decision_event(visitor, &decision);
+        request.add_decision_event(visitor, decision);
 
         // Dispatch single decision
         request.send()

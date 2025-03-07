@@ -4,7 +4,7 @@ use std::{collections::HashMap, time::SystemTime};
 use uuid::Uuid;
 
 #[derive(Serialize)]
-pub struct Event {
+pub struct ConversionEvent {
     uuid: String,
     timestamp: u128,
     entity_id: String,
@@ -13,10 +13,10 @@ pub struct Event {
     properties: HashMap<String, String>,
 }
 
-impl Event {
+impl ConversionEvent {
     pub fn new(
         entity_id: String, key: String, properties: HashMap<String, String>, tags: HashMap<String, String>,
-    ) -> Event {
+    ) -> ConversionEvent {
         // Generate new UUID
         let uuid = Uuid::new_v4().as_hyphenated().to_string();
 
@@ -26,7 +26,7 @@ impl Event {
             Err(_) => 0,
         };
 
-        Event {
+        ConversionEvent {
             uuid,
             timestamp,
             entity_id,
@@ -37,7 +37,7 @@ impl Event {
     }
 }
 
-impl From<&crate::Conversion> for Event {
+impl From<&crate::Conversion> for ConversionEvent {
     fn from(conversion: &crate::Conversion) -> Self {
         Self::new(
             conversion.event_id().into(),

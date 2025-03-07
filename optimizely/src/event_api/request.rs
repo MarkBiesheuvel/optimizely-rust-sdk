@@ -9,15 +9,15 @@ use crate::datafile::Datafile;
 
 // Relative imports of sub modules
 use attribute::Attribute;
-use decision::Decision;
-use event::Event;
+pub(crate) use conversion_event::ConversionEvent;
+pub(crate) use decision_event::DecisionEvent;
 pub(crate) use payload::Payload;
 use snapshot::Snapshot;
 pub(crate) use visitor::Visitor;
 
 mod attribute;
-mod decision;
-mod event;
+mod conversion_event;
+mod decision_event;
 mod payload;
 mod snapshot;
 mod visitor;
@@ -51,12 +51,12 @@ impl Request {
     }
 
     /// Add a conversion event for a specific visitor to the payload
-    pub fn add_conversion_event(&mut self, visitor: Visitor, conversion: &crate::Conversion) {
+    pub fn add_conversion_event(&mut self, visitor: Visitor, conversion: ConversionEvent) {
         self.payload().add_conversion_event(visitor, conversion);
     }
 
     /// Add a decision event for a specific visitor to the payload
-    pub fn add_decision_event(&mut self, visitor: Visitor, decision: &crate::Decision) {
+    pub fn add_decision_event(&mut self, visitor: Visitor, decision: DecisionEvent) {
         self.payload().add_decision_event(visitor, decision);
     }
 

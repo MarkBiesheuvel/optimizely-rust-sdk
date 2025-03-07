@@ -40,7 +40,7 @@ fn user_context_track_event() -> Result<(), Box<dyn Error>> {
     user_context.track_event("purchase");
 
     // Assert that exactly one event is dispatched
-    assert_eq!(ctx.conversions.len(), 1);
+    assert_eq!(ctx.conversion_counter.value(), 1);
 
     Ok(())
 }

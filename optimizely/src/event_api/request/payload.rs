@@ -6,7 +6,7 @@ use std::collections::HashMap;
 use crate::event_api::EventApiError;
 
 // Imports from super
-use super::Visitor;
+use super::{ConversionEvent, DecisionEvent, Visitor};
 
 // Information regarding the SDK client
 const CLIENT_NAME: &str = "rust-sdk";
@@ -45,34 +45,33 @@ impl Payload {
     }
 
     /// Add a conversion event for a specific visitor to the payload
-    pub fn add_conversion_event(&mut self, mut visitor: Visitor, conversion: &crate::Conversion) {
+    pub fn add_conversion_event(&mut self, mut visitor: Visitor, event: ConversionEvent) {
         log::debug!("Adding conversion event to payload");
 
         // Add custom event
-        visitor.add_event(conversion);
+        visitor.add_conversion_event(event);
 
         // Add to the list
         self.visitors.push(visitor);
     }
 
     /// Add a decision event for a specific visitor to the payload
-    pub fn add_decision_event(&mut self, mut visitor: Visitor, decision: &crate::Decision) {
+    pub fn add_decision_event(&mut self, mut visitor: Visitor, decision: DecisionEvent) {
         log::debug!("Adding decision event to payload");
 
-        // Use campaign_id as entity_id
-        let entity_id = decision.campaign_id();
+        // Copy campaign_id as entity_id
+        let entity_id = decision.campaign_id().to_owned();
 
         // Add decision to visitor
-        visitor.add_decision(decision);
+        visitor.add_decision_event(decision);
 
         // Campaign activated event does not have tags or properties
         let properties = HashMap::default();
         let tags = HashMap::default();
 
         // Add campaign_activated event
-        // TODO: rewrite this with event_api::request::Event
-        let conversion = crate::Conversion::new(ACTIVATE_EVENT_KEY, entity_id, properties, tags);
-        visitor.add_event(&conversion);
+        let event = ConversionEvent::new(entity_id, ACTIVATE_EVENT_KEY.into(), properties, tags);
+        visitor.add_conversion_event(event);
 
         // Add to the list
         self.visitors.push(visitor);

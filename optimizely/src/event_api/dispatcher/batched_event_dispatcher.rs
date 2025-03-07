@@ -1,13 +1,9 @@
-// External imports
+use super::EventDispatcher;
+use crate::event_api::request::{ConversionEvent, DecisionEvent, Request, Visitor};
+use crate::{client::UserContext, datafile::Datafile};
+use crate::{Conversion, Decision};
 use std::sync::mpsc;
 use std::thread;
-
-// Imports from super
-use super::EventDispatcher;
-
-// Imports from crate
-use crate::event_api::request::{Request, Visitor};
-use crate::{client::UserContext, datafile::Datafile, Conversion, Decision};
 
 // Structure used to send message between threads
 struct ThreadMessage {
@@ -15,8 +11,8 @@ struct ThreadMessage {
     event: EventEnum,
 }
 enum EventEnum {
-    Conversion(Conversion),
-    Decision(Decision),
+    Conversion(ConversionEvent),
+    Decision(DecisionEvent),
 }
 
 // Upper limit to number of events in a batch
@@ -51,10 +47,10 @@ impl BatchedEventDispatcher {
                 // the corresponding event to the payload
                 match event {
                     EventEnum::Conversion(conversion) => {
-                        request.add_conversion_event(visitor, &conversion);
+                        request.add_conversion_event(visitor, conversion);
                     }
                     EventEnum::Decision(decision) => {
-                        request.add_decision_event(visitor, &decision);
+                        request.add_decision_event(visitor, decision);
                     }
                 }
 
@@ -77,10 +73,14 @@ impl BatchedEventDispatcher {
 
 impl EventDispatcher for BatchedEventDispatcher {
     fn send_conversion_event(&self, user_context: &UserContext, conversion: Conversion) {
-        self.transmit(user_context, EventEnum::Conversion(conversion))
+        // Convert from optimizely::Conversion to optimizely::event_api::request::ConversionEvent
+        let event = ConversionEvent::from(&conversion);
+        self.transmit(user_context, EventEnum::Conversion(event))
     }
 
     fn send_decision_event(&self, user_context: &UserContext, decision: Decision) {
+        // Convert from optimizely::Decision to optimizely::event_api::request::DecisionEvent
+        let decision = DecisionEvent::from(&decision);
         self.transmit(user_context, EventEnum::Decision(decision))
     }
 }

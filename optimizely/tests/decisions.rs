@@ -43,7 +43,7 @@ fn qa_rollout_flag() -> Result<(), Box<dyn Error>> {
     assert_decision!(ctx, flag_key, "user15", true, "on");
 
     // Since this key is a rollout, no events should be dispatched
-    assert_eq!(ctx.decisions.len(), 0);
+    assert_eq!(ctx.decision_counter.value(), 0);
 
     Ok(())
 }
@@ -88,7 +88,7 @@ fn buy_button_flag() -> Result<(), Box<dyn Error>> {
     assert_decision!(ctx, flag_key, "user31", true, "primary");
 
     // Each of those 32 users should dispatch an event
-    assert_eq!(ctx.decisions.len(), 32);
+    assert_eq!(ctx.decision_counter.value(), 32);
 
     Ok(())
 }
@@ -105,7 +105,7 @@ fn invalid_flag() -> Result<(), Box<dyn Error>> {
     assert_decision!(ctx, flag_key, "user4", false, "off");
 
     // Since this key does not exist, no events should be dispatched
-    assert_eq!(ctx.decisions.len(), 0);
+    assert_eq!(ctx.decision_counter.value(), 0);
 
     Ok(())
 }
