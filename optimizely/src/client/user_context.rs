@@ -5,7 +5,7 @@ use std::collections::HashMap;
 // Imports from crate
 #[cfg(feature = "online")]
 use crate::conversion::Conversion;
-use crate::datafile::{Experiment, FeatureFlag, Variation};
+use crate::datafile::{Experiment, FeatureFlag};
 use crate::decision::{DecideOptions, Decision};
 
 // Imports from super
@@ -141,14 +141,11 @@ impl UserContext<'_> {
         let mut send_decision = !options.disable_decision_event;
 
         // Get the selected variation for the given flag
-        let decision = match self.decide_variation_for_flag(flag, &mut send_decision) {
-            Some((experiment, variation)) => {
-                // Unpack the variation and create Decision struct
-                Decision::from(flag_key, experiment, variation)
-            }
+        let decision = match self.decide_variation_for_flag(flag_key, flag, &mut send_decision) {
+            Some(decision) => decision,
             None => {
                 // No experiment or rollout found, or user does not qualify for any
-                Decision::off(flag_key)
+                return Decision::off(flag_key);
             }
         };
 
@@ -163,57 +160,48 @@ impl UserContext<'_> {
         decision
     }
 
-    fn decide_variation_for_flag<'a>(
-        &'a self, flag: &'a FeatureFlag, send_decision: &mut bool,
-    ) -> Option<(&'a Experiment, &'a Variation)> {
-        // Find first Experiment for which this user qualifies
-        let result = flag.experiments_ids().iter().find_map(|experiment_id| {
-            let experiment = self.client.datafile().experiment(experiment_id);
+    fn decide_variation_for_flag<'a, 'b>(
+        &'b self, flag_key: &'a str, flag: &'b FeatureFlag, send_decision: &mut bool,
+    ) -> Option<Decision<'a, 'b>> {
+        // If the user qualifies for an experiment, use that decision
+        let decision = match self.find_applicable_experiment(flag) {
+            Some(experiment) => self.decide_variation_for_experiment(flag_key, experiment),
+            None => None,
+        };
 
-            match experiment {
-                Some(experiment) => {
-                    let audience_ids = experiment.audience_ids();
-
-                    if audience_ids.len() == 0
-                        || audience_ids
-                            .iter()
-                            .any(|audience_id| self.does_match_audience(audience_id))
-                    {
-                        self.decide_variation_for_experiment(experiment)
-                    } else {
-                        None
-                    }
-                }
-                None => None,
-            }
-        });
-
-        match result {
+        match decision {
             Some(_) => {
                 // Send out a decision event for an A/B Test
                 *send_decision &= true;
 
-                result
+                decision
             }
             None => {
                 // Do not send any decision for a Rollout (Targeted Delivery)
                 *send_decision = false;
 
                 // No direct experiment found, let's look at the Rollout
-                let rollout = self.client.datafile().rollout(flag.rollout_id()).unwrap(); // TODO: remove unwrap
+                let rollout = match self.client.datafile().rollout(flag.rollout_id()) {
+                    Some(rollout) => rollout,
+                    None => {
+                        // No rollout found
+                        return None;
+                    }
+                };
 
                 // Find the first experiment within the Rollout for which this user qualifies
+                // TODO: match audiences
                 rollout
                     .experiments()
                     .iter()
-                    .find_map(|experiment| self.decide_variation_for_experiment(experiment))
+                    .find_map(|experiment| self.decide_variation_for_experiment(flag_key, experiment))
             }
         }
     }
 
-    fn decide_variation_for_experiment<'a>(
-        &'a self, experiment: &'a Experiment,
-    ) -> Option<(&'a Experiment, &'a Variation)> {
+    fn decide_variation_for_experiment<'a, 'b>(
+        &'b self, flag_key: &'a str, experiment: &'b Experiment,
+    ) -> Option<Decision<'a, 'b>> {
         // Use references for the ids
         let user_id = self.user_id();
         let experiment_id = experiment.id();
@@ -237,8 +225,32 @@ impl UserContext<'_> {
             .map(|variation_id| experiment.variation(variation_id))
             .flatten()
             // Combine it with the experiment
-            .map(|variation| Some((experiment, variation)))
-            .flatten()
+            .map(|variation| Decision::from(flag_key, experiment, variation))
+    }
+
+    // Find first Experiment for which this user qualifies
+    fn find_applicable_experiment<'a>(&'a self, flag: &'a FeatureFlag) -> Option<&'a Experiment> {
+        flag.experiments_ids()
+            .iter()
+            .filter_map(|experiment_id| self.client.datafile().experiment(experiment_id))
+            .find_map(|experiment| {
+                let audience_ids = experiment.audience_ids();
+
+                // If there are no audiences, everyone is welcome
+                if audience_ids.len() == 0 {
+                    return Some(experiment);
+                }
+
+                // Otherwise, the user needs to match at least one audience
+                if audience_ids
+                    .iter()
+                    .any(|audience_id| self.does_match_audience(audience_id))
+                {
+                    Some(experiment)
+                } else {
+                    None
+                }
+            })
     }
 
     fn does_match_audience<S>(&self, audience_id: S) -> bool
