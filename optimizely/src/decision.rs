@@ -2,6 +2,8 @@
 
 // Relative imports of sub modules
 pub use decide_options::DecideOptions;
+
+use crate::datafile;
 mod decide_options;
 
 /// Decision for a specific user and feature flag
@@ -16,7 +18,7 @@ pub struct Decision {
 }
 
 impl Decision {
-    pub(crate) fn new<T: Into<String>>(
+    fn new<T: Into<String>>(
         flag_key: T, campaign_id: T, experiment_id: T, variation_id: T, variation_key: T, enabled: bool,
     ) -> Decision {
         Decision {
@@ -29,8 +31,21 @@ impl Decision {
         }
     }
 
+    pub(crate) fn from_datafile(
+        flag: &datafile::FeatureFlag, experiment: &datafile::Experiment, variation: &datafile::Variation,
+    ) -> Decision {
+        Decision::new(
+            flag.key(),
+            experiment.campaign_id(),
+            experiment.id(),
+            variation.id(),
+            variation.key(),
+            variation.is_feature_enabled(),
+        )
+    }
+
     pub(crate) fn off(flag_key: &str) -> Decision {
-        Decision::new(flag_key, "-1", "-1", "-1", "off", false)
+        Decision::new(flag_key, "", "", "", "off", false)
     }
 
     /// Get the flag key for which this decision was made

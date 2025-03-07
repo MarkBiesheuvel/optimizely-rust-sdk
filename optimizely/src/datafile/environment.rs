@@ -2,7 +2,10 @@
 use serde::Deserialize;
 
 // Imports from super
-use super::{AttributeMap, AudienceMap, EventMap, ExperimentMap, FeatureFlagMap, Revision, RolloutMap};
+use super::{
+    audience::Audience, rollout::Rollout, Attribute, AttributeMap, AudienceMap, Event, EventMap, Experiment,
+    ExperimentMap, FeatureFlag, FeatureFlagMap, Revision, RolloutMap,
+};
 
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
@@ -41,8 +44,8 @@ impl Environment {
     }
 
     /// Getter for `revision` field
-    pub fn revision(&self) -> &Revision {
-        &self.revision
+    pub fn revision(&self) -> u32 {
+        *self.revision
     }
 
     #[allow(dead_code)]
@@ -55,27 +58,51 @@ impl Environment {
         self.anonymize_ip
     }
 
-    pub fn feature_flags(&self) -> &FeatureFlagMap {
-        &self.feature_flags
+    /// Get the flag with the given key
+    pub fn flag(&self, flag_key: &str) -> Option<&FeatureFlag> {
+        self.feature_flags.get(flag_key).or_else(|| {
+            log::warn!("Flag key does not exist in datafile");
+            None
+        })
     }
 
-    pub fn experiments(&self) -> &ExperimentMap {
-        &self.experiments
+    /// Get the experiment with the given experiment ID
+    pub fn experiment(&self, experiment_id: &str) -> Option<&Experiment> {
+        self.experiments.get(experiment_id).or_else(|| {
+            log::warn!("Experiment ID does not exist in datafile");
+            None
+        })
     }
 
-    pub fn rollouts(&self) -> &RolloutMap {
-        &self.rollouts
+    /// Get the rollout with the given rollout ID
+    pub fn rollout(&self, rollout_id: &str) -> Option<&Rollout> {
+        self.rollouts.get(rollout_id).or_else(|| {
+            log::warn!("Rollout ID does not exist in datafile");
+            None
+        })
     }
 
-    pub fn events(&self) -> &EventMap {
-        &self.events
+    /// Get the event with the given key
+    pub fn event(&self, event_key: &str) -> Option<&Event> {
+        self.events.get(event_key).or_else(|| {
+            log::warn!("Event key does not exist in datafile");
+            None
+        })
     }
 
-    pub fn attributes(&self) -> &AttributeMap {
-        &self.attributes
+    /// Get the attribute with the given key
+    pub fn attribute(&self, attribute_key: &str) -> Option<&Attribute> {
+        self.attributes.get(attribute_key).or_else(|| {
+            log::warn!("Attribute key does not exist in datafile");
+            None
+        })
     }
 
-    pub fn audiences(&self) -> &AudienceMap {
-        &self.audiences
+    /// Get the audience with the given audience ID
+    pub fn audience(&self, audience_id: &str) -> Option<&Audience> {
+        self.audiences.get(audience_id).or_else(|| {
+            log::warn!("Audience key does not exist in datafile");
+            None
+        })
     }
 }

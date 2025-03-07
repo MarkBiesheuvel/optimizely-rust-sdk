@@ -63,16 +63,10 @@ impl UserContext<'_> {
         let key = key.into();
         let value = value.into();
 
-        match self.client.datafile().attribute(&key) {
-            Some(attribute) => {
-                // Create user attribute by adding a value to a (datafile) attribute
-                let user_attribute = UserAttribute::from((attribute, value));
-                self.user_attributes.insert(key, user_attribute);
-            }
-            None => {
-                // Attribute key not found
-                log::warn!("Attribute key does not exist in datafile");
-            }
+        if let Some(datafile_attribute) = self.client.datafile().attribute(&key) {
+            // Create user attribute by combining a value to a datafile attribute
+            let user_attribute = UserAttribute::from((datafile_attribute, value));
+            self.user_attributes.insert(key, user_attribute);
         }
     }
 
@@ -112,21 +106,16 @@ impl UserContext<'_> {
         &self, event_key: &str, properties: HashMap<String, String>, tags: HashMap<String, String>,
     ) {
         // Find the event key in the datafile
-        match self.client.datafile().event(event_key) {
-            Some(event) => {
-                log::debug!("Logging conversion event");
+        if let Some(event) = self.client.datafile().event(event_key) {
+            log::debug!("Logging conversion event");
 
-                // Create conversion to send to dispatcher
-                let conversion = Conversion::new(event_key, event.id(), properties, tags);
+            // Create conversion to send to dispatcher
+            let conversion = Conversion::new(event_key, event.id(), properties, tags);
 
-                // Ignore result of the send_decision function
-                self.client
-                    .event_dispatcher()
-                    .send_conversion_event(self, conversion);
-            }
-            None => {
-                log::warn!("Event key does not exist in datafile");
-            }
+            // Ignore result of the send_decision function
+            self.client
+                .event_dispatcher()
+                .send_conversion_event(self, conversion);
         }
     }
 
@@ -138,7 +127,7 @@ impl UserContext<'_> {
 
     /// Decide which variation to show to a user
     pub fn decide_with_options(&self, flag_key: &str, options: &DecideOptions) -> Decision {
-        // Retrieve Flag object
+        // Retrieve Flag
         let flag = match self.client.datafile().flag(flag_key) {
             Some(flag) => flag,
             None => {
@@ -155,14 +144,7 @@ impl UserContext<'_> {
         let decision = match self.decide_variation_for_flag(flag, &mut send_decision) {
             Some((experiment, variation)) => {
                 // Unpack the variation and create Decision struct
-                Decision::new(
-                    flag_key,
-                    experiment.campaign_id(),
-                    experiment.id(),
-                    variation.id(),
-                    variation.key(),
-                    variation.is_feature_enabled(),
-                )
+                Decision::from_datafile(flag, experiment, variation)
             }
             None => {
                 // No experiment or rollout found, or user does not qualify for any

@@ -40,7 +40,7 @@ impl Client {
             .change_context(ClientError::FailedResponse)?;
 
         // Use response to build Client
-        Client::from_string(&content)
+        Client::from_string(content)
     }
 
     /// Read the datafile from the local filesystem
@@ -56,13 +56,16 @@ impl Client {
             .change_context(ClientError::FailedFileRead)?;
 
         // Use file content to build Client
-        Client::from_string(&content)
+        Client::from_string(content)
     }
 
     /// Use a string variable as the datafile
-    pub fn from_string(content: &str) -> Result<UninitializedClient, ClientError> {
+    pub fn from_string<S>(content: S) -> Result<UninitializedClient, ClientError>
+    where
+        S: AsRef<str>,
+    {
         // Create datafile from a string
-        let datafile = Datafile::build(content).change_context(ClientError::InvalidDatafile)?;
+        let datafile = Datafile::try_from(content.as_ref()).change_context(ClientError::InvalidDatafile)?;
 
         // Return uninitialized client
         Ok(UninitializedClient::new(datafile))

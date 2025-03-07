@@ -1,18 +1,18 @@
 //! Parsing the Optimizely datafile
 
-// External imports
-use error_stack::{Result, ResultExt};
+use error_stack::{Report, ResultExt};
+use std::ops::Deref;
 
 // Relative imports of sub modules
 pub(crate) use attribute::{Attribute, AttributeMap};
-use audience::{Audience, AudienceMap};
+use audience::AudienceMap;
 use environment::Environment;
 pub use error::DatafileError;
 pub(crate) use event::{Event, EventMap};
 pub(crate) use experiment::{Experiment, ExperimentMap};
 pub(crate) use feature_flag::{FeatureFlag, FeatureFlagMap};
 use revision::Revision;
-use rollout::{Rollout, RolloutMap};
+use rollout::RolloutMap;
 use traffic_allocation::TrafficAllocation;
 pub(crate) use variation::{Variation, VariationMap};
 
@@ -41,52 +41,24 @@ mod variation;
 #[derive(Debug)]
 pub struct Datafile(Environment);
 
-impl Datafile {
+impl TryFrom<&str> for Datafile {
+    type Error = Report<DatafileError>;
+
     /// Construct a new Datafile from a string containing a JSON document
-    pub fn build(content: &str) -> Result<Datafile, DatafileError> {
+    fn try_from(value: &str) -> std::result::Result<Self, Self::Error> {
         // Parse the JSON content via Serde into Rust structs
-        let environment: Environment = serde_json::from_str(content).change_context(DatafileError::InvalidJson)?;
+        let environment = serde_json::from_str(value).change_context(DatafileError::InvalidJson)?;
 
         Ok(Datafile(environment))
     }
+}
 
-    /// Get the account ID
-    pub fn account_id(&self) -> &str {
-        self.0.account_id()
-    }
+impl Deref for Datafile {
+    type Target = Environment;
 
-    /// Get the revision of the datafile
-    pub fn revision(&self) -> u32 {
-        **self.0.revision()
-    }
-
-    /// Get the flag with the given key
-    pub fn flag(&self, flag_key: &str) -> Option<&FeatureFlag> {
-        self.0.feature_flags().get(flag_key)
-    }
-
-    /// Get the experiment with the given experiment ID
-    pub fn experiment(&self, experiment_id: &str) -> Option<&Experiment> {
-        self.0.experiments().get(experiment_id)
-    }
-
-    /// Get the rollout with the given rollout ID
-    pub fn rollout(&self, rollout_id: &str) -> Option<&Rollout> {
-        self.0.rollouts().get(rollout_id)
-    }
-
-    /// Get the event with the given key
-    pub fn event(&self, event_key: &str) -> Option<&Event> {
-        self.0.events().get(event_key)
-    }
-
-    /// Get the attribute with the given key
-    pub fn attribute(&self, attribute_key: &str) -> Option<&Attribute> {
-        self.0.attributes().get(attribute_key)
-    }
-
-    /// Get the audience with the given audience ID
-    pub fn audience(&self, audience_id: &str) -> Option<&Audience> {
-        self.0.audiences().get(audience_id)
+    /// Since a Datafile always contains exactly one environment, they can be used interchangeably.
+    /// Therefore it makes sense to dereference a datafile to an environment in order to access its methods.
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }
