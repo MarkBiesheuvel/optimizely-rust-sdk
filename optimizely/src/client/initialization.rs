@@ -117,10 +117,10 @@ impl UninitializedClient {
         let datafile = self.datafile;
 
         // Select default for any options that were not specified
-        let event_dispatcher = match self.event_dispatcher {
-            Some(event_dispatcher) => event_dispatcher,
-            None => Box::new(SimpleEventDispatcher::new(&datafile)),
-        };
+        #[cfg(feature = "online")]
+        let event_dispatcher = self
+            .event_dispatcher
+            .unwrap_or_else(|| Box::new(SimpleEventDispatcher::new(&datafile)));
 
         Client {
             datafile: datafile,

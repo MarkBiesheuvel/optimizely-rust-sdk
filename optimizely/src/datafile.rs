@@ -31,13 +31,14 @@ mod variation;
 /// The datafile contains all the feature flags, experiments, events and other configuration from an Optimizely account.
 ///
 /// This configuration is stored in JSON format.
-/// A string containing this JSON format is used to build a `Datafile` struct.
-/// The `serde_json` library is used to parse the JSON string into an hierarchy of Rust structs.
+/// The `serde_json` crate is used to parse the JSON string into an hierarchy of Rust structs.
 ///
-/// While it is possible to perform zero-copy deserialization with `serde`, it would require to store an owned `String`
-/// containing the `content`.
-/// This would mean that a lot of memory would stay allocated for JSON syntax and unused properties.
-/// Instead the relevant fields are copied into their own `String`s.
+/// While it is possible to perform zero-copy deserialization with `serde`, there are two main issues.
+/// First, the JSON string is read from disk or read from an HTTP response by the client, so the client owns the String.
+/// The client cannot store an owned String as well as borrowed references to that String.
+/// This would require unsafe code using raw pointers or using Pin.
+/// Secondly, keeping the entire JSON string in memory would use up a lot of additional space for JSON syntax and
+/// unused properties. Instead, only the relevant fields are copied into owned Strings.
 #[derive(Debug)]
 pub struct Datafile(Environment);
 
