@@ -9,7 +9,7 @@ use crate::datafile::{Experiment, FeatureFlag};
 use crate::decision::{DecideOptions, Decision};
 
 // Imports from super
-use super::{Client, UserAttribute};
+use super::{Client, UserAttribute, UserAttributeMap};
 
 /// Constant used for the hashing algorithm
 const HASH_SEED: u32 = 1;
@@ -44,32 +44,34 @@ const MAX_OF_RANGE: f64 = 10_000_f64;
 pub struct UserContext<'a> {
     client: &'a Client,
     user_id: &'a str,
-    user_attributes: HashMap<String, UserAttribute>,
+    user_attributes: UserAttributeMap<'a>,
 }
 
-impl UserContext<'_> {
+impl<'a> UserContext<'a> {
     // Only allow UserContext to be constructed from a Client
-    pub(crate) fn new<'a>(client: &'a Client, user_id: &'a str) -> UserContext<'a> {
+    pub(crate) fn new(client: &'a Client, user_id: &'a str) -> UserContext<'a> {
         UserContext {
             client,
             user_id,
-            user_attributes: HashMap::new(),
+            user_attributes: UserAttributeMap::default(),
         }
     }
 
     /// Add a new attribute to a user context
-    pub fn set_attribute<T: Into<String>>(&mut self, key: T, value: T) {
-        // Create owned copies of the key and value
+    pub fn set_attribute<S>(&mut self, key: S, value: &'a str)
+    where
+        S: Into<std::borrow::Cow<'a, str>>,
+    {
         let key = key.into();
-        let value = value.into();
-
         if let Some(datafile_attribute) = self.client.datafile().attribute(&key) {
             // Create user attribute by combining a value to a datafile attribute
-            let user_attribute = UserAttribute::from((datafile_attribute, value));
-            self.user_attributes.insert(key, user_attribute);
+            let user_attribute = UserAttribute::from_attribute_and_value(datafile_attribute, value);
+            self.user_attributes
+                .insert(key.into_owned(), user_attribute);
         }
     }
-
+}
+impl UserContext<'_> {
     /// Get the client instance
     pub fn client(&self) -> &Client {
         self.client

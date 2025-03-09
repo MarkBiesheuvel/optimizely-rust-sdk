@@ -1,10 +1,9 @@
 use super::match_type::MatchType;
 use super::operator::{NumericOperator, StringOperator};
 use super::value::{AnyValue, NumericValue};
-use crate::client::UserAttribute;
+use crate::client::UserAttributeMap;
 use serde::de::{Error, MapAccess, SeqAccess, Visitor};
 use serde::{Deserialize, Deserializer};
-use std::collections::HashMap;
 use std::fmt;
 
 #[derive(Deserialize, Debug)]
@@ -45,7 +44,7 @@ pub enum Condition {
 
 impl Condition {
     /// Whether the user attributes match the condition or not
-    pub fn does_match(&self, user_attributes: &HashMap<String, UserAttribute>) -> bool {
+    pub fn does_match<'a>(&self, user_attributes: &UserAttributeMap<'a>) -> bool {
         match self {
             Condition::AndSequence(sequence) => {
                 // Combine sequence with AND

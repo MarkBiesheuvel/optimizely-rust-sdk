@@ -1,6 +1,8 @@
-use std::convert::From;
-
 use crate::datafile;
+use std::{
+    collections::HashMap,
+    ops::{Deref, DerefMut},
+};
 
 /// An attribute of the user.
 ///
@@ -9,19 +11,19 @@ use crate::datafile;
 /// compared to the same type in every audience condition.
 /// The Event API expects all attributes to be a text, hence why we always store the value as a String
 #[derive(Debug)]
-pub struct UserAttribute {
-    id: String,
-    key: String,
-    value: String,
+pub struct UserAttribute<'a> {
+    id: &'a str,
+    key: &'a str,
+    value: &'a str,
 }
 
-impl UserAttribute {
+impl UserAttribute<'_> {
     /// Create user attribute by adding a value to a (datafile) attribute
-    pub fn new<T: Into<String>>(id: T, key: T, value: T) -> UserAttribute {
+    pub fn from_attribute_and_value<'a>(attribute: &'a datafile::Attribute, value: &'a str) -> UserAttribute<'a> {
         UserAttribute {
-            id: id.into(),
-            key: key.into(),
-            value: value.into(),
+            id: attribute.id(),
+            key: attribute.key(),
+            value,
         }
     }
 
@@ -41,13 +43,21 @@ impl UserAttribute {
     }
 }
 
-impl From<(&datafile::Attribute, String)> for UserAttribute {
-    /// Create user attribute by combining a value and a `datafile::Attribute`
-    fn from((attribute, value): (&datafile::Attribute, String)) -> UserAttribute {
-        UserAttribute {
-            id: attribute.id().into(),
-            key: attribute.key().into(),
-            value: value,
-        }
+#[derive(Debug, Default)]
+/// Mapping of attribute key to UserAttribute
+/// TODO: rewrite to map from datafile::Attribute to value
+pub struct UserAttributeMap<'a>(HashMap<String, UserAttribute<'a>>);
+
+impl<'a> Deref for UserAttributeMap<'a> {
+    type Target = HashMap<String, UserAttribute<'a>>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl<'a> DerefMut for UserAttributeMap<'a> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
     }
 }
