@@ -41,10 +41,10 @@
 //! # Ok::<(), Box<dyn std::error::Error>>(())
 //! ```
 
-// Imports from crate
 use crate::datafile::Datafile;
 #[cfg(feature = "online")]
 use crate::event_api::EventDispatcher;
+use std::sync::{RwLock, RwLockReadGuard};
 
 // Relative imports of sub modules
 pub use error::ClientError;
@@ -61,10 +61,12 @@ mod user_context;
 ///
 /// See [super] for examples.
 pub struct Client {
-    datafile: Datafile,
+    datafile: RwLock<Datafile>,
     #[cfg(feature = "online")]
     event_dispatcher: Box<dyn EventDispatcher>,
 }
+
+type DatafileReadLock<'a> = RwLockReadGuard<'a, Datafile>;
 
 impl Client {
     /// Create a new user context for a given user id
@@ -72,16 +74,13 @@ impl Client {
         UserContext::new(self, user_id)
     }
 
-    // /// Create a new user context for a given user id
-    // pub fn create_user_context_with_attributes<'a>(
-    //     &'a self, user_id: &'a str, attributes: UserAttributes,
-    // ) -> UserContext<'a> {
-    //     UserContext::new(self, user_id, attributes)
-    // }
-
     /// Get the datafile within the client
-    pub fn datafile(&self) -> &Datafile {
-        &self.datafile
+    pub fn datafile<'a>(&'a self) -> DatafileReadLock<'a> {
+        // Obtain read lock
+        let lock_result = self.datafile.read();
+
+        // The lock should not be poisoned, since the writing thread should not panic
+        lock_result.expect("The read/write lock on datafile should not be poisoned.")
     }
 
     /// Get the event dispatcher within the client

@@ -9,20 +9,22 @@ use std::{
 /// Unfortunately, attributes in Optimizely do not have a type.
 /// Types are specified in the audience condition, however there is no guarantee that the same attribute will be
 /// compared to the same type in every audience condition.
-/// The Event API expects all attributes to be a text, hence why we always store the value as a String
+/// The Event API expects all attributes to be a text, hence why we always store the value as a &str.
+/// 
+/// Unfortunately, references to the datafile have to be cloned in order to release the read/write lock
 #[derive(Debug)]
 pub struct UserAttribute<'a> {
-    id: &'a str,
-    key: &'a str,
+    id: String,
+    key: String,
     value: &'a str,
 }
 
 impl UserAttribute<'_> {
     /// Create user attribute by adding a value to a (datafile) attribute
-    pub fn from_attribute_and_value<'a>(attribute: &'a datafile::Attribute, value: &'a str) -> UserAttribute<'a> {
+    pub fn from_attribute_and_value<'a>(attribute: &datafile::Attribute, value: &'a str) -> UserAttribute<'a> {
         UserAttribute {
-            id: attribute.id(),
-            key: attribute.key(),
+            id: attribute.id().into(),
+            key: attribute.key().into(),
             value,
         }
     }

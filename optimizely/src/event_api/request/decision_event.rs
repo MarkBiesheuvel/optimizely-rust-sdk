@@ -24,7 +24,7 @@ impl DecisionEvent {
     }
 }
 
-impl From<&crate::Decision<'_, '_>> for DecisionEvent {
+impl From<&crate::Decision<'_>> for DecisionEvent {
     fn from(decision: &crate::Decision) -> Self {
         Self::new(decision.campaign_id().into(), decision.experiment_id().into(), decision.variation_id().into())
     }

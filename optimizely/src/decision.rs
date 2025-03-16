@@ -8,44 +8,42 @@ mod decide_options;
 
 /// Decision for a specific user and feature flag
 #[derive(Debug, Clone)]
-pub struct Decision<'a, 'b> {
+pub struct Decision<'a> {
     flag_key: &'a str,
-    campaign_id: &'b str,
-    experiment_id: &'b str,
-    variation_id: &'b str,
-    variation_key: &'b str,
+    campaign_id: String,
+    experiment_id: String,
+    variation_id: String,
+    variation_key: String,
     enabled: bool,
 }
 
-impl Decision<'_, '_> {
-    pub(crate) fn from<'a, 'b>(
-        flag_key: &'a str, experiment: &'b datafile::Experiment, variation: &'b datafile::Variation,
-    ) -> Decision<'a, 'b> {
+impl Decision<'_> {
+    pub(crate) fn from<'a>(
+        flag_key: &'a str, experiment: &datafile::Experiment, variation: &datafile::Variation,
+    ) -> Decision<'a> {
         Decision {
             flag_key,
-            campaign_id: experiment.campaign_id(),
-            experiment_id: experiment.id(),
-            variation_id: variation.id(),
-            variation_key: variation.key(),
+            campaign_id: experiment.campaign_id().into(),
+            experiment_id: experiment.id().into(),
+            variation_id: variation.id().into(),
+            variation_key: variation.key().into(),
             enabled: variation.is_feature_enabled(),
         }
     }
 
-    pub(crate) fn off<'a>(flag_key: &'a str) -> Decision<'a, 'static> {
+    pub(crate) fn off<'a>(flag_key: &'a str) -> Decision<'a> {
         Decision {
             flag_key: flag_key,
-            campaign_id: "",
-            experiment_id: "",
-            variation_id: "",
-            variation_key: "off",
+            campaign_id: String::default(),
+            experiment_id: String::default(),
+            variation_id: String::default(),
+            variation_key: String::from("off"),
             enabled: false,
         }
     }
-}
 
-impl<'a, 'b> Decision<'a, 'b> {
     /// Get the flag key for which this decision was made
-    pub fn flag_key(&self) -> &'a str {
+    pub fn flag_key(&self) -> &str {
         &self.flag_key
     }
 
@@ -55,22 +53,22 @@ impl<'a, 'b> Decision<'a, 'b> {
     }
 
     /// Get the campaign ID
-    pub fn campaign_id(&self) -> &'b str {
+    pub fn campaign_id(&self) -> &str {
         &self.campaign_id
     }
 
     /// Get the experiment ID
-    pub fn experiment_id(&self) -> &'b str {
+    pub fn experiment_id(&self) -> &str {
         &self.experiment_id
     }
 
     /// Get the variation ID that was decided
-    pub fn variation_id(&self) -> &'b str {
+    pub fn variation_id(&self) -> &str {
         &self.variation_id
     }
 
     /// Get the variation key that was decided
-    pub fn variation_key(&self) -> &'b str {
+    pub fn variation_key(&self) -> &str {
         &self.variation_key
     }
 }

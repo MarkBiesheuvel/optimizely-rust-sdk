@@ -2,6 +2,7 @@
 use error_stack::{Result, ResultExt};
 use std::fs::File;
 use std::io::Read;
+use std::sync::RwLock;
 
 // Imports from crate
 use crate::client::{Client, ClientError};
@@ -123,7 +124,7 @@ impl UninitializedClient {
             .unwrap_or_else(|| Box::new(SimpleEventDispatcher::new(&datafile)));
 
         Client {
-            datafile: datafile,
+            datafile: RwLock::new(datafile),
             #[cfg(feature = "online")]
             event_dispatcher,
         }
