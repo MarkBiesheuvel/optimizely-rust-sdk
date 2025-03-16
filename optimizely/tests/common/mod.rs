@@ -28,7 +28,9 @@ pub struct Counter(Arc<RwLock<usize>>);
 impl Counter {
     fn increment(&self) {
         // Acquire write lock and increment value
-        let _ = self.0.write().map(|mut value| *value += 1);
+        if let Ok(mut lock_guard) = self.0.write() {
+            *lock_guard += 1
+        }
     }
 
     pub fn value(&self) -> usize {

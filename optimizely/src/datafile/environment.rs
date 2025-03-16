@@ -13,6 +13,7 @@ pub struct Environment {
     account_id: String,
     project_id: String,
     environment_key: String,
+    sdk_key: String,
     revision: Revision,
     bot_filtering: bool,
     #[serde(rename = "anonymizeIP")]
@@ -31,6 +32,11 @@ impl Environment {
     /// Getter for `account_id` field
     pub fn account_id(&self) -> &str {
         &self.account_id
+    }
+
+    /// Getter for `sdk_key` field
+    pub fn sdk_key(&self) -> &str {
+        &self.sdk_key
     }
 
     #[allow(dead_code)]

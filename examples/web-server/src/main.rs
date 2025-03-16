@@ -1,10 +1,12 @@
 use axum::{extract::State, response::Html, routing::get, Router};
+use env_logger::Target;
+use log::LevelFilter;
 use optimizely::{decision::DecideOptions, event_api::BatchedEventDispatcher, Client};
 use std::sync::Arc;
 use uuid::Uuid;
 
 const SDK_KEY: &str = "KVpGWnzPGKvvQ8yeEWmJZ";
-const FLAG_KEY: &str = "buy_button";
+const FLAG_KEY: &str = "issue_23";
 
 #[derive(Clone)]
 struct AppState {
@@ -14,6 +16,12 @@ struct AppState {
 
 #[tokio::main]
 async fn main() {
+    // Set log level to debug
+    env_logger::builder()
+        .target(Target::Stdout)
+        .filter_module("optimizely", LevelFilter::Info)
+        .init();
+
     // Initiate client using SDK key and batched event dispatcher
     let client = Client::from_sdk_key(SDK_KEY)
         .unwrap()
