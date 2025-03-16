@@ -41,7 +41,7 @@ impl UserAttribute<'_> {
 
     /// Get value of the attribute
     pub fn value(&self) -> &str {
-        &self.value
+        self.value
     }
 }
 
@@ -58,7 +58,7 @@ impl<'a> Deref for UserAttributeMap<'a> {
     }
 }
 
-impl<'a> DerefMut for UserAttributeMap<'a> {
+impl DerefMut for UserAttributeMap<'_> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }

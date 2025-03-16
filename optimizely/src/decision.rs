@@ -33,9 +33,9 @@ impl Decision<'_> {
         }
     }
 
-    pub(crate) fn off<'a>(flag_key: &'a str) -> Decision<'a> {
+    pub(crate) fn off(flag_key: &str) -> Decision<'_> {
         Decision {
-            flag_key: flag_key,
+            flag_key,
             campaign_id: String::default(),
             experiment_id: String::default(),
             variation_id: String::default(),
@@ -46,7 +46,7 @@ impl Decision<'_> {
 
     /// Get the flag key for which this decision was made
     pub fn flag_key(&self) -> &str {
-        &self.flag_key
+        self.flag_key
     }
 
     /// Get whether the flag should be enabled or disable

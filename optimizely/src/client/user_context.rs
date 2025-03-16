@@ -154,7 +154,7 @@ impl UserContext<'_> {
         if send_decision {
             self.client
                 .event_dispatcher()
-                .send_decision_event(&self, &decision);
+                .send_decision_event(self, &decision);
         }
 
         // Return
@@ -224,8 +224,7 @@ impl UserContext<'_> {
             .traffic_allocation()
             .variation(bucket_value)
             // Map it to a Variation struct
-            .map(|variation_id| experiment.variation(variation_id))
-            .flatten()
+            .and_then(|variation_id| experiment.variation(variation_id))
             // Combine it with the experiment
             .map(|variation| Decision::from(flag_key, experiment, variation))
     }
@@ -237,23 +236,18 @@ impl UserContext<'_> {
         flag.experiments_ids()
             .iter()
             .filter_map(|experiment_id| datafile.experiment(experiment_id))
-            .find_map(|experiment| {
+            .find(|experiment| {
                 let audience_ids = experiment.audience_ids();
 
                 // If there are no audiences, everyone is welcome
-                if audience_ids.len() == 0 {
-                    return Some(experiment);
+                if audience_ids.is_empty() {
+                    return true;
                 }
 
                 // Otherwise, the user needs to match at least one audience
-                if audience_ids
+                audience_ids
                     .iter()
                     .any(|audience_id| self.does_match_audience(datafile, audience_id))
-                {
-                    Some(experiment)
-                } else {
-                    None
-                }
             })
     }
 

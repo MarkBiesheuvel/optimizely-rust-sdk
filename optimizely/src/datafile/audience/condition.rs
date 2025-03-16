@@ -44,7 +44,7 @@ pub enum Condition {
 
 impl Condition {
     /// Whether the user attributes match the condition or not
-    pub fn does_match<'a>(&self, user_attributes: &UserAttributeMap<'a>) -> bool {
+    pub fn does_match(&self, user_attributes: &UserAttributeMap<'_>) -> bool {
         match self {
             Condition::AndSequence(sequence) => {
                 // Combine sequence with AND
@@ -162,7 +162,7 @@ impl<'de> Visitor<'de> for ConditionVisitor {
         let attribute_name = attribute_name.ok_or_else(|| Error::missing_field("name"))?;
 
         // Value is optional. It is not needed for exists
-        let value = value.unwrap_or_else(|| AnyValue::Null);
+        let value = value.unwrap_or(AnyValue::Null);
 
         // Only accept valid combinations of match type and value type
         let condition = match value {

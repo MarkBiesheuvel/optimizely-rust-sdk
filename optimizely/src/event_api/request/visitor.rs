@@ -38,7 +38,7 @@ impl From<&UserContext<'_>> for Visitor {
         let attributes = user
             .user_attributes()
             .into_iter()
-            .map(|user_attribute| Attribute::from(user_attribute))
+            .map(Attribute::from)
             .collect();
 
         Visitor::new(user_id, attributes)

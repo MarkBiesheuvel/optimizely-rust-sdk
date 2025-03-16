@@ -30,7 +30,7 @@ impl Payload {
     /// Construct an empty payload for a given account
     pub fn new(account_id: String) -> Payload {
         Payload {
-            account_id: account_id,
+            account_id,
             visitors: Vec::new(),
             enrich_decisions: true,
             anonymize_ip: true,

@@ -75,7 +75,7 @@ impl Client {
     }
 
     /// Get the datafile within the client
-    pub fn datafile<'a>(&'a self) -> DatafileReadLock<'a> {
+    pub fn datafile(&self) -> DatafileReadLock<'_> {
         // Obtain read lock
         let lock_result = self.datafile.read();
 

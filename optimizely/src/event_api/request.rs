@@ -97,7 +97,6 @@ impl Request {
                 Err(report) => {
                     log::error!("Failed to send request to Event API");
                     log::error!("\n{report:?}");
-                    return;
                 }
             }
         } else {
