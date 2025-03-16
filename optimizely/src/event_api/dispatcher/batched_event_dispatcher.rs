@@ -72,15 +72,15 @@ impl BatchedEventDispatcher {
 }
 
 impl EventDispatcher for BatchedEventDispatcher {
-    fn send_conversion_event(&self, user_context: &UserContext, conversion: Conversion) {
+    fn send_conversion_event(&self, user_context: &UserContext, conversion: &Conversion) {
         // Convert from optimizely::Conversion to optimizely::event_api::request::ConversionEvent
-        let event = ConversionEvent::from(&conversion);
+        let event = ConversionEvent::from(conversion);
         self.transmit(user_context, EventEnum::Conversion(event))
     }
 
-    fn send_decision_event(&self, user_context: &UserContext, decision: Decision) {
+    fn send_decision_event(&self, user_context: &UserContext, decision: &Decision) {
         // Convert from optimizely::Decision to optimizely::event_api::request::DecisionEvent
-        let decision = DecisionEvent::from(&decision);
+        let decision = DecisionEvent::from(decision);
         self.transmit(user_context, EventEnum::Decision(decision))
     }
 }

@@ -27,20 +27,17 @@ pub struct Counter(Arc<RwLock<usize>>);
 
 impl Counter {
     fn increment(&self) {
-        // Acquire lock on the RwLock
-        if let Ok(mut value) = self.0.write() {
-            // Increment value
-            *value += 1;
-        } else {
-            // Error handling not implemented in this example
-        }
+        // Acquire write lock and increment value
+        let _ = self.0.write().map(|mut value| *value += 1);
     }
 
     pub fn value(&self) -> usize {
+        // Acquire read lock and return value or 0
         self.0.read().map(|value| *value).unwrap_or_default()
     }
 
     fn clone(&self) -> Self {
+        // Clone the atomic counted reference
         Self(self.0.clone())
     }
 }
@@ -54,11 +51,11 @@ pub struct EventStore {
 
 // Implementing the EventDispatcher using the interior mutability pattern
 impl EventDispatcher for EventStore {
-    fn send_conversion_event(&self, _user_context: &UserContext, _conversion: Conversion) {
+    fn send_conversion_event(&self, _user_context: &UserContext, _conversion: &Conversion) {
         self.conversion_counter.increment();
     }
 
-    fn send_decision_event(&self, _user_context: &UserContext, _decision: Decision) {
+    fn send_decision_event(&self, _user_context: &UserContext, _decision: &Decision) {
         self.decision_counter.increment();
     }
 }

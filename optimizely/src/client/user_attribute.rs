@@ -10,7 +10,7 @@ use std::{
 /// Types are specified in the audience condition, however there is no guarantee that the same attribute will be
 /// compared to the same type in every audience condition.
 /// The Event API expects all attributes to be a text, hence why we always store the value as a &str.
-/// 
+///
 /// Unfortunately, references to the datafile have to be cloned in order to release the read/write lock
 #[derive(Debug)]
 pub struct UserAttribute<'a> {

@@ -7,6 +7,8 @@ use crate::datafile;
 mod decide_options;
 
 /// Decision for a specific user and feature flag
+///
+/// Unfortunately, references to the datafile have to be cloned in order to release the read/write lock
 #[derive(Debug, Clone)]
 pub struct Decision<'a> {
     flag_key: &'a str,

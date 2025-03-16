@@ -25,7 +25,7 @@ impl SimpleEventDispatcher {
 }
 
 impl EventDispatcher for SimpleEventDispatcher {
-    fn send_conversion_event(&self, user_context: &UserContext, conversion: Conversion) {
+    fn send_conversion_event(&self, user_context: &UserContext, conversion: &Conversion) {
         log::debug!("Sending conversion event to Event API");
 
         // Get mutable reference to request
@@ -41,7 +41,7 @@ impl EventDispatcher for SimpleEventDispatcher {
         let visitor = Visitor::from(user_context);
 
         // Convert from optimizely::Conversion to optimizely::event_api::request::ConversionEvent
-        let event = ConversionEvent::from(&conversion);
+        let event = ConversionEvent::from(conversion);
         // Add single conversion
         request.add_conversion_event(visitor, event);
 
@@ -49,7 +49,7 @@ impl EventDispatcher for SimpleEventDispatcher {
         request.send()
     }
 
-    fn send_decision_event(&self, user_context: &UserContext, decision: Decision) {
+    fn send_decision_event(&self, user_context: &UserContext, decision: &Decision) {
         log::debug!("Sending decision event to Event API");
 
         // Get mutable reference to request
@@ -65,7 +65,7 @@ impl EventDispatcher for SimpleEventDispatcher {
         let visitor = Visitor::from(user_context);
 
         // Convert from optimizely::Decision to optimizely::event_api::request::DecisionEvent
-        let decision = DecisionEvent::from(&decision);
+        let decision = DecisionEvent::from(decision);
         // Add single decision
         request.add_decision_event(visitor, decision);
 

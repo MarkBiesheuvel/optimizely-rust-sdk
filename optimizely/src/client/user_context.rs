@@ -58,8 +58,7 @@ impl<'a> UserContext<'a> {
     }
 
     /// Add a new attribute to a user context
-    pub fn set_attribute(&mut self, key: impl Into<String>, value: &'a str)
-    {
+    pub fn set_attribute(&mut self, key: impl Into<String>, value: &'a str) {
         let key = key.into();
         if let Some(datafile_attribute) = self.client.datafile().attribute(&key) {
             // Create user attribute by combining a value to a datafile attribute
@@ -114,7 +113,7 @@ impl UserContext<'_> {
             // Ignore result of the send_decision function
             self.client
                 .event_dispatcher()
-                .send_conversion_event(self, conversion);
+                .send_conversion_event(self, &conversion);
         }
     }
 
@@ -155,7 +154,7 @@ impl UserContext<'_> {
         if send_decision {
             self.client
                 .event_dispatcher()
-                .send_decision_event(&self, decision.clone()); // TODO: replace with reference
+                .send_decision_event(&self, &decision);
         }
 
         // Return
@@ -258,8 +257,7 @@ impl UserContext<'_> {
             })
     }
 
-    fn does_match_audience<'b>(&self, datafile: &'b DatafileReadLock<'b>, audience_id: impl AsRef<str>) -> bool
-    {
+    fn does_match_audience<'b>(&self, datafile: &'b DatafileReadLock<'b>, audience_id: impl AsRef<str>) -> bool {
         // Retrieve the audience from the datafile
         let audience = match datafile.audience(audience_id.as_ref()) {
             Some(audience) => audience,
