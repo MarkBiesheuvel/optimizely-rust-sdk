@@ -1,6 +1,8 @@
 //! Parsing the Optimizely datafile
+use std::fs::File;
+use std::io::Read;
 
-use error_stack::{Report, ResultExt};
+use error_stack::{Report, Result, ResultExt};
 use std::ops::Deref;
 
 // Relative imports of sub modules
@@ -41,6 +43,52 @@ mod variation;
 /// unused properties. Instead, only the relevant fields are copied into owned Strings.
 #[derive(Debug)]
 pub struct Datafile(Environment);
+
+impl Datafile {
+    /// Download the datafile from the CDN using an SDK key
+    #[cfg(feature = "online")]
+    pub fn from_sdk_key(sdk_key: &str) -> Result<Datafile, DatafileError> {
+        // Construct URL
+        let url = format!("https://cdn.optimizely.com/datafiles/{}.json", sdk_key);
+
+        // Make GET request
+        let response = ureq::get(&url)
+            .call()
+            .change_context(DatafileError::FailedRequest)?;
+
+        // Get response body
+        let content = response
+            .into_string()
+            .change_context(DatafileError::FailedResponse)?;
+
+        // Use response to build Client
+        Datafile::from_string(content)
+    }
+
+    /// Read the datafile from the local filesystem
+    pub fn from_local_datafile(file_path: &str) -> Result<Datafile, DatafileError> {
+        // Read content from local path
+        let mut content = String::new();
+
+        // Open file
+        let mut file = File::open(file_path).change_context(DatafileError::FailedFileOpen)?;
+
+        // Read file content into String
+        file.read_to_string(&mut content)
+            .change_context(DatafileError::FailedFileRead)?;
+
+        // Use file content to build Client
+        Datafile::from_string(content)
+    }
+
+    /// Use a string variable as the datafile
+    pub fn from_string<S>(content: S) -> Result<Datafile, DatafileError>
+    where
+        S: AsRef<str>,
+    {
+        Datafile::try_from(content.as_ref())
+    }
+}
 
 impl TryFrom<&str> for Datafile {
     type Error = Report<DatafileError>;

@@ -1,63 +1,36 @@
 // External imports
 use error_stack::{Result, ResultExt};
-use std::fs::File;
-use std::io::Read;
-use std::sync::RwLock;
 
 // Imports from crate
 use crate::client::{Client, ClientError};
 use crate::datafile::Datafile;
 
 #[cfg(feature = "online")]
-use crate::event_api::{EventDispatcher, SimpleEventDispatcher};
+use crate::event_api::EventDispatcher;
 
 /// Intermediate struct that is used to initialize a new [Client].
 ///
 /// See [super] for examples.
 pub struct UninitializedClient {
-    datafile: Datafile,
+    pub(crate) datafile: Datafile,
     _default_decide_options: Option<()>,
     _user_profile_service: Option<()>,
     #[cfg(feature = "online")]
-    event_dispatcher: Option<Box<dyn EventDispatcher>>,
+    pub(crate) event_dispatcher: Option<Box<dyn EventDispatcher>>,
 }
 
 impl Client {
     /// Download the datafile from the CDN using an SDK key
     #[cfg(feature = "online")]
     pub fn from_sdk_key(sdk_key: &str) -> Result<UninitializedClient, ClientError> {
-        // Construct URL
-        let url = format!("https://cdn.optimizely.com/datafiles/{}.json", sdk_key);
-
-        // Make GET request
-        // TODO: implement polling mechanism
-        let response = ureq::get(&url)
-            .call()
-            .change_context(ClientError::FailedRequest)?;
-
-        // Get response body
-        let content = response
-            .into_string()
-            .change_context(ClientError::FailedResponse)?;
-
-        // Use response to build Client
-        Client::from_string(content)
+        let datafile = Datafile::from_sdk_key(sdk_key).change_context(ClientError::InvalidDatafile)?;
+        Client::from_datafile(datafile)
     }
 
     /// Read the datafile from the local filesystem
     pub fn from_local_datafile(file_path: &str) -> Result<UninitializedClient, ClientError> {
-        // Read content from local path
-        let mut content = String::new();
-
-        // Open file
-        let mut file = File::open(file_path).change_context(ClientError::FailedFileOpen)?;
-
-        // Read file content into String
-        file.read_to_string(&mut content)
-            .change_context(ClientError::FailedFileRead)?;
-
-        // Use file content to build Client
-        Client::from_string(content)
+        let datafile = Datafile::from_local_datafile(file_path).change_context(ClientError::InvalidDatafile)?;
+        Client::from_datafile(datafile)
     }
 
     /// Use a string variable as the datafile
@@ -65,9 +38,11 @@ impl Client {
     where
         S: AsRef<str>,
     {
-        // Create datafile from a string
-        let datafile = Datafile::try_from(content.as_ref()).change_context(ClientError::InvalidDatafile)?;
+        let datafile = Datafile::from_string(content).change_context(ClientError::InvalidDatafile)?;
+        Client::from_datafile(datafile)
+    }
 
+    fn from_datafile(datafile: Datafile) -> Result<UninitializedClient, ClientError> {
         // Return uninitialized client
         Ok(UninitializedClient::new(datafile))
     }
@@ -76,7 +51,7 @@ impl Client {
 impl UninitializedClient {
     pub(super) fn new(datafile: Datafile) -> UninitializedClient {
         UninitializedClient {
-            datafile,
+            datafile: datafile,
             _default_decide_options: None,
             _user_profile_service: None,
             #[cfg(feature = "online")]
@@ -115,18 +90,6 @@ impl UninitializedClient {
 
     /// Initialize the client
     pub fn initialize(self) -> Client {
-        let datafile = self.datafile;
-
-        // Select default for any options that were not specified
-        #[cfg(feature = "online")]
-        let event_dispatcher = self
-            .event_dispatcher
-            .unwrap_or_else(|| Box::new(SimpleEventDispatcher::new(&datafile)));
-
-        Client {
-            datafile: RwLock::new(datafile),
-            #[cfg(feature = "online")]
-            event_dispatcher,
-        }
+        Client::from(self)
     }
 }

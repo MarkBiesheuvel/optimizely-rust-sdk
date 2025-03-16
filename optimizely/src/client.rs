@@ -41,9 +41,9 @@
 //! # Ok::<(), Box<dyn std::error::Error>>(())
 //! ```
 
-use crate::datafile::Datafile;
 #[cfg(feature = "online")]
 use crate::event_api::EventDispatcher;
+use crate::{datafile::Datafile, event_api::SimpleEventDispatcher};
 use std::sync::{RwLock, RwLockReadGuard};
 
 // Relative imports of sub modules
@@ -67,6 +67,24 @@ pub struct Client {
 }
 
 type DatafileReadLock<'a> = RwLockReadGuard<'a, Datafile>;
+
+impl From<UninitializedClient> for Client {
+    fn from(options: UninitializedClient) -> Self {
+        let datafile = options.datafile;
+
+        // Select default for any options that were not specified
+        #[cfg(feature = "online")]
+        let event_dispatcher = options
+            .event_dispatcher
+            .unwrap_or_else(|| Box::new(SimpleEventDispatcher::new(&datafile)));
+
+        Client {
+            datafile: RwLock::new(datafile),
+            #[cfg(feature = "online")]
+            event_dispatcher,
+        }
+    }
+}
 
 impl Client {
     /// Create a new user context for a given user id
