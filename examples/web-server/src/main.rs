@@ -1,8 +1,8 @@
 use axum::{extract::State, response::Html, routing::get, Router};
 use env_logger::Target;
 use log::LevelFilter;
-use optimizely::{decision::DecideOptions, event_api::BatchedEventDispatcher, Client};
-use std::sync::Arc;
+use optimizely::{decision::DecideOptions, Client};
+use std::{sync::Arc, time::Duration};
 use uuid::Uuid;
 
 const SDK_KEY: &str = "KVpGWnzPGKvvQ8yeEWmJZ";
@@ -11,7 +11,6 @@ const FLAG_KEY: &str = "issue_23";
 #[derive(Clone)]
 struct AppState {
     client: Arc<Client>,
-    decide_options: Arc<DecideOptions>,
 }
 
 #[tokio::main]
@@ -22,22 +21,22 @@ async fn main() {
         .filter_module("optimizely", LevelFilter::Info)
         .init();
 
-    // Initiate client using SDK key and batched event dispatcher
-    let client = Client::from_sdk_key(SDK_KEY)
-        .unwrap()
-        .with_event_dispatcher(BatchedEventDispatcher::new)
-        .initialize();
-
     // Do not send any decision events
     let decide_options = DecideOptions {
         disable_decision_event: true,
         ..DecideOptions::default()
     };
 
+    // Initiate client using SDK key and batched event dispatcher
+    let client = Client::from_sdk_key(SDK_KEY)
+        .expect("Client should initialize with SDK key")
+        .with_default_decide_options(decide_options)
+        .with_update_interval(Duration::from_secs(5))
+        .initialize();
+
     // Initialize state with client and potential other properties
     let state = AppState {
         client: Arc::new(client),
-        decide_options: Arc::new(decide_options),
     };
 
     // build our application with a route
@@ -54,7 +53,7 @@ async fn handler(State(state): State<AppState>) -> Html<String> {
     // Create user context
     let user_context = state.client.create_user_context(&user_id);
     // Decide variation for user
-    let decision = user_context.decide_with_options(FLAG_KEY, &state.decide_options);
+    let decision = user_context.decide(FLAG_KEY);
     // Extract variation key
     let variation_key = decision.variation_key();
     // Generate HTML

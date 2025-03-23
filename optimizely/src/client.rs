@@ -41,12 +41,12 @@
 //! # Ok::<(), Box<dyn std::error::Error>>(())
 //! ```
 
+use crate::decision::DecideOptions;
 #[cfg(feature = "online")]
 use crate::event_api::EventDispatcher;
 use crate::{datafile::Datafile, event_api::SimpleEventDispatcher};
 use std::sync::{Arc, RwLock, RwLockReadGuard};
 use std::thread::{self, sleep};
-use std::time::Duration;
 
 // Relative imports of sub modules
 pub use error::ClientError;
@@ -64,6 +64,7 @@ mod user_context;
 /// See [super] for examples.
 pub struct Client {
     datafile_lock: Arc<RwLock<Datafile>>,
+    default_decide_options: DecideOptions,
     #[cfg(feature = "online")]
     event_dispatcher: Box<dyn EventDispatcher>,
 }
@@ -78,8 +79,11 @@ impl From<UninitializedClient> for Client {
             .event_dispatcher
             .unwrap_or_else(|| Box::new(SimpleEventDispatcher::new(&options.datafile)));
 
+        let default_decide_options = options.default_decide_options.unwrap_or_default();
+
         // Clone SDK key so it can be moved to the polling thread
         let sdk_key = options.datafile.sdk_key().to_owned();
+        let mut current_revision = options.datafile.revision();
 
         // Store the datafile in a reference counted read/write lock
         let datafile_lock = Arc::new(RwLock::new(options.datafile));
@@ -87,29 +91,39 @@ impl From<UninitializedClient> for Client {
         // Clone the reference
         let datafile_lock_clone = datafile_lock.clone();
 
-        // TODO: make auto update configurable
-        // TODO: make auto update online possible when the online feature is enabled
-        thread::spawn(move || {
-            log::debug!("Starting thread for datafile polling");
+        // TODO: make auto update only possible when the online feature is enabled
+        // Spawn a thread to update the datafile in the background if update interval is set
+        if let Some(interval) = options.update_interval {
+            thread::spawn(move || {
+                log::debug!("Starting thread for datafile polling");
 
-            loop {
-                log::info!("Fetching latest datafile");
+                loop {
+                    log::debug!("Fetching latest datafile");
 
-                // Request new datafile
-                if let Ok(datafile) = Datafile::from_sdk_key(&sdk_key) {
-                    // TODO: compare revisions and only acquire write lock if revision changed
-                    if let Ok(mut lock_guard) = datafile_lock_clone.write() {
-                        *lock_guard = datafile;
+                    // Request new datafile
+                    if let Ok(datafile) = Datafile::from_sdk_key(&sdk_key) {
+                        let latest_revision = datafile.revision();
+
+                        // Only acquire write lock if revision changed
+                        if current_revision < latest_revision {
+                            log::info!("Updating datafile from {current_revision} to {latest_revision}");
+                            if let Ok(mut lock_guard) = datafile_lock_clone.write() {
+                                *lock_guard = datafile;
+                                current_revision = latest_revision;
+                            } else {
+                                log::error!("Failed to acquire write lock on datafile")
+                            }
+                        }
                     }
-                }
 
-                // TODO: make the interval configurable
-                sleep(Duration::from_secs(30));
-            }
-        });
+                    sleep(interval);
+                }
+            });
+        }
 
         Client {
             datafile_lock,
+            default_decide_options,
             #[cfg(feature = "online")]
             event_dispatcher,
         }
@@ -129,6 +143,11 @@ impl Client {
 
         // The lock should not be poisoned, since the writing thread should not panic
         lock_result.expect("The read/write lock on datafile should not be poisoned.")
+    }
+
+    /// Get the default DecideOptions
+    pub fn default_decide_options(&self) -> &DecideOptions {
+        &self.default_decide_options
     }
 
     /// Get the event dispatcher within the client

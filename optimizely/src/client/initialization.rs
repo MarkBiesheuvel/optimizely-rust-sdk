@@ -1,10 +1,10 @@
-// External imports
+use std::time::Duration;
 use error_stack::{Result, ResultExt};
 
 // Imports from crate
 use crate::client::{Client, ClientError};
 use crate::datafile::Datafile;
-
+use crate::decision::DecideOptions;
 #[cfg(feature = "online")]
 use crate::event_api::EventDispatcher;
 
@@ -13,8 +13,8 @@ use crate::event_api::EventDispatcher;
 /// See [super] for examples.
 pub struct UninitializedClient {
     pub(crate) datafile: Datafile,
-    _default_decide_options: Option<()>,
-    _user_profile_service: Option<()>,
+    pub(crate) update_interval: Option<Duration>,
+    pub(crate) default_decide_options: Option<DecideOptions>,
     #[cfg(feature = "online")]
     pub(crate) event_dispatcher: Option<Box<dyn EventDispatcher>>,
 }
@@ -52,8 +52,8 @@ impl UninitializedClient {
     pub(super) fn new(datafile: Datafile) -> UninitializedClient {
         UninitializedClient {
             datafile: datafile,
-            _default_decide_options: None,
-            _user_profile_service: None,
+            update_interval: None,
+            default_decide_options: None,
             #[cfg(feature = "online")]
             event_dispatcher: None,
         }
@@ -86,7 +86,23 @@ impl UninitializedClient {
         self
     }
 
-    // TODO: implement with_default_decide_options and with_user_profile_service
+    /// Use these decide options for every decide call (if none are specified)
+    pub fn with_default_decide_options(mut self, options: DecideOptions) -> UninitializedClient {
+        // Store decide options
+        self.default_decide_options = Some(options);
+
+        // Return self, so can chain other functions
+        self
+    }
+
+    /// Automatically fetch the latest datafile in a regular interval
+    pub fn with_update_interval(mut self, interval: Duration) -> UninitializedClient {
+        // Store interval
+        self.update_interval = Some(interval);
+
+        // Return self, so can chain other functions
+        self
+    }
 
     /// Initialize the client
     pub fn initialize(self) -> Client {
