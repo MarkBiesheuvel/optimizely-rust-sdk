@@ -1,5 +1,5 @@
-use std::time::Duration;
 use error_stack::{Result, ResultExt};
+use std::time::Duration;
 
 // Imports from crate
 use crate::client::{Client, ClientError};
