@@ -58,6 +58,30 @@ impl Condition {
                     .iter()
                     .any(|condition| condition.does_match(user_attributes))
             }
+            Condition::Exists { attribute_name } => {
+                // Verify that attribute does exist
+                user_attributes.get(attribute_name).is_some()
+            }
+            Condition::BooleanComparison {
+                attribute_name,
+                value,
+            } => {
+                // Retrieve value
+                user_attributes
+                    .get(attribute_name)
+                    .map(|user_attribute| {
+                        // Instead of parsing a string to bool, we'll just match cases
+                        match user_attribute.value() {
+                            // User has attribute set to true, so the condition is true if the desired value is true
+                            "true" => *value,
+                            // User has attribute set to false, so the condition is true if the desired value is false
+                            "false" => !value,
+                            // Not a valid bool, so does not match
+                            _ => false,
+                        }
+                    })
+                    .unwrap_or(false)
+            }
             Condition::StringComparison {
                 attribute_name,
                 operator,
@@ -71,15 +95,39 @@ impl Condition {
                         match operator {
                             StringOperator::Equal => value == user_attribute.value(),
                             StringOperator::Contains => user_attribute.value().contains(value),
-                            _ => {
-                                todo!("Implement other string operator types");
-                            }
+                            StringOperator::SemVerEqual => todo!(),
+                            StringOperator::SemVerLessThan => todo!(),
+                            StringOperator::SemVerLessThanOrEqual => todo!(),
+                            StringOperator::SemVerGreaterThan => todo!(),
+                            StringOperator::SemVerGreaterThanOrEqual => todo!(),
                         }
                     })
                     .unwrap_or(false)
             }
-            _ => {
-                todo!("Implement other condition types!");
+            Condition::NumericComparison {
+                attribute_name,
+                operator,
+                value: _,
+            } => {
+                // Retrieve value
+                user_attributes
+                    .get(attribute_name)
+                    .map(|user_attribute| {
+                        // Convert to number
+                        let _user_attribute_value = user_attribute.value();
+
+                        // TODO: compare user_attribute_value string to NumericValue enum
+
+                        // Apply operator
+                        match operator {
+                            NumericOperator::Equal => todo!(),
+                            NumericOperator::LessThan => todo!(),
+                            NumericOperator::LessThanOrEqual => todo!(),
+                            NumericOperator::GreaterThan => todo!(),
+                            NumericOperator::GreaterThanOrEqual => todo!(),
+                        }
+                    })
+                    .unwrap_or(false)
             }
         }
     }
