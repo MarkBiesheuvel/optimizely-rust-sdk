@@ -1,7 +1,8 @@
 use super::match_type::MatchType;
-use super::operator::{NumericOperator, StringOperator};
+use super::operator::{NumericOperator, SemVerOperator, StringOperator};
 use super::value::{AnyValue, NumericValue};
 use crate::client::UserAttributeMap;
+use semver::Version;
 use serde::de::{Error, MapAccess, SeqAccess, Visitor};
 use serde::{Deserialize, Deserializer};
 use std::fmt;
@@ -91,15 +92,34 @@ impl Condition {
                 user_attributes
                     .get(attribute_name)
                     .map(|user_attribute| {
-                        // Apply operator
+                        let user_attribute_value = user_attribute.value();
+
+                        // Apply string operator
                         match operator {
-                            StringOperator::Equal => value == user_attribute.value(),
-                            StringOperator::Contains => user_attribute.value().contains(value),
-                            StringOperator::SemVerEqual => todo!(),
-                            StringOperator::SemVerLessThan => todo!(),
-                            StringOperator::SemVerLessThanOrEqual => todo!(),
-                            StringOperator::SemVerGreaterThan => todo!(),
-                            StringOperator::SemVerGreaterThanOrEqual => todo!(),
+                            StringOperator::Equal => value == user_attribute_value,
+                            StringOperator::Contains => user_attribute_value.contains(value),
+                            StringOperator::SemVer(sem_ver_operator) => {
+                                let user_attribute_value = match Version::parse(user_attribute_value) {
+                                    Ok(version) => version,
+                                    Err(_) => {
+                                        return false;
+                                    }
+                                };
+                                let desired_value = match Version::parse(value) {
+                                    Ok(version) => version,
+                                    Err(_) => {
+                                        return false;
+                                    }
+                                };
+                                // Apply semantic version operator
+                                match sem_ver_operator {
+                                    SemVerOperator::Equal => user_attribute_value == desired_value,
+                                    SemVerOperator::LessThan => user_attribute_value < desired_value,
+                                    SemVerOperator::LessThanOrEqual => user_attribute_value <= desired_value,
+                                    SemVerOperator::GreaterThan => user_attribute_value > desired_value,
+                                    SemVerOperator::GreaterThanOrEqual => user_attribute_value >= desired_value,
+                                }
+                            }
                         }
                     })
                     .unwrap_or(false)
@@ -113,7 +133,6 @@ impl Condition {
                 user_attributes
                     .get(attribute_name)
                     .map(|user_attribute| {
-                        // Convert to number
                         let _user_attribute_value = user_attribute.value();
 
                         // TODO: compare user_attribute_value string to NumericValue enum
@@ -257,11 +276,11 @@ impl<'de> Visitor<'de> for ConditionVisitor {
                 let operator = match match_type {
                     MatchType::Exact => StringOperator::Equal,
                     MatchType::Substring => StringOperator::Contains,
-                    MatchType::SemVerEqual => StringOperator::SemVerEqual,
-                    MatchType::SemVerLessThan => StringOperator::SemVerLessThan,
-                    MatchType::SemVerLessThanOrEqual => StringOperator::SemVerLessThanOrEqual,
-                    MatchType::SemVerGreaterThan => StringOperator::SemVerGreaterThan,
-                    MatchType::SemVerGreaterThanOrEqual => StringOperator::SemVerGreaterThanOrEqual,
+                    MatchType::SemVerEqual => StringOperator::SemVer(SemVerOperator::Equal),
+                    MatchType::SemVerLessThan => StringOperator::SemVer(SemVerOperator::LessThan),
+                    MatchType::SemVerLessThanOrEqual => StringOperator::SemVer(SemVerOperator::LessThanOrEqual),
+                    MatchType::SemVerGreaterThan => StringOperator::SemVer(SemVerOperator::GreaterThan),
+                    MatchType::SemVerGreaterThanOrEqual => StringOperator::SemVer(SemVerOperator::GreaterThanOrEqual),
                     _ => {
                         return Err(Error::custom("invalid operator for string"));
                     }
@@ -295,15 +314,20 @@ mod tests {
 
     #[test]
     fn single_match() -> Result<(), Box<dyn Error>> {
+        // JSON encoded condition
         let json = r#"{"match":"semver_ge","name":"app_version","type":"custom_attribute","value":"0.4.0"}"#;
 
-        let expected = Condition::StringComparison {
+        // Native condition
+        let condition = Condition::StringComparison {
             attribute_name: String::from("app_version"),
-            operator: StringOperator::SemVerGreaterThanOrEqual,
+            operator: StringOperator::SemVer(SemVerOperator::GreaterThanOrEqual),
             value: String::from("0.4.0"),
         };
 
-        assert_eq!(serde_json::from_str::<Condition>(json)?, expected);
+        // Parse successfully
+        assert_eq!(serde_json::from_str::<Condition>(json)?, condition);
+
+        // TODO: check against user attribute value
 
         Ok(())
     }

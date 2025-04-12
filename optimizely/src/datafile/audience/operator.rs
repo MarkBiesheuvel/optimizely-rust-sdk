@@ -13,9 +13,14 @@ pub enum NumericOperator {
 pub enum StringOperator {
     Equal,
     Contains,
-    SemVerEqual,
-    SemVerLessThan,
-    SemVerLessThanOrEqual,
-    SemVerGreaterThan,
-    SemVerGreaterThanOrEqual,
+    SemVer(SemVerOperator),
+}
+
+#[derive(Deserialize, Debug, PartialEq)]
+pub enum SemVerOperator {
+    Equal,
+    LessThan,
+    LessThanOrEqual,
+    GreaterThan,
+    GreaterThanOrEqual,
 }
