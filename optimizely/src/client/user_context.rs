@@ -14,8 +14,11 @@ use super::{Client, DatafileReadLock, UserAttribute, UserAttributeMap};
 /// Constant used for the hashing algorithm
 const HASH_SEED: u32 = 1;
 
-/// Ranges are specified between 0 and 10_000
-const MAX_OF_RANGE: f64 = 10_000_f64;
+/// Hash values are between 0 and u32::MAX (inclusive) or 2^32 (exclusive)
+const MAX_HASH_VALUE: f64 = 4_294_967_296_f64;
+
+/// Range values are between 0 and 10_000 (exclusive)
+const MAX_RANGE_VALUE: f64 = 10_000_f64;
 
 /// A user-specific context of the SDK client
 ///
@@ -217,7 +220,7 @@ impl UserContext<'_> {
         let hash_value = murmur3_hash(&mut bytes, HASH_SEED).unwrap();
 
         // Bring the hash into a range of 0 to 10_000
-        let bucket_value = ((hash_value as f64) / (u32::MAX as f64) * MAX_OF_RANGE) as u64;
+        let bucket_value = ((hash_value as f64) / MAX_HASH_VALUE * MAX_RANGE_VALUE) as u64;
 
         // Get the variation ID according to the traffic allocation
         experiment
