@@ -3,14 +3,14 @@ use murmur3::murmur3_32 as murmur3_hash;
 use std::collections::HashMap;
 
 // Imports from crate
-#[cfg(feature = "online")]
-use crate::conversion::Conversion;
 use crate::datafile::{Experiment, FeatureFlag};
-use crate::decision::{DecideOptions, Decision};
-use crate::AttributeValue;
+use crate::{AttributeValue, Conversion, DecideOptions, Decision};
 
 // Imports from super
-use super::{Client, DatafileReadLock, UserAttribute, UserAttributeMap};
+use super::{
+    user_attribute::{UserAttribute, UserAttributeMap},
+    Client, DatafileReadLock,
+};
 
 /// Constant used for the hashing algorithm
 const HASH_SEED: u32 = 1;
@@ -24,7 +24,7 @@ const MAX_RANGE_VALUE: f64 = 10_000_f64;
 /// A user-specific context of the SDK client
 ///
 /// ```
-/// use optimizely::{Client, decision::DecideOptions};
+/// use optimizely::{Client, DecideOptions};
 ///
 /// // Initialize Optimizely client using local datafile
 /// let file_path = "../datafiles/sandbox.json";
@@ -75,6 +75,7 @@ impl<'a> UserContext<'a> {
         }
     }
 }
+
 impl UserContext<'_> {
     /// Get the client instance
     pub fn client(&self) -> &Client {

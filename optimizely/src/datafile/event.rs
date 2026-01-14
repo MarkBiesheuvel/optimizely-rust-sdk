@@ -3,7 +3,7 @@ use serde::{Deserialize, Deserializer};
 use std::collections::HashMap;
 
 #[derive(Deserialize, Debug)]
-pub struct Event {
+pub(crate) struct Event {
     id: String,
     key: String,
 }
@@ -15,13 +15,14 @@ impl Event {
     }
 
     /// Getter for `key` field
+    #[allow(dead_code)]
     pub fn key(&self) -> &str {
         &self.key
     }
 }
 
 #[derive(Debug)]
-pub struct EventMap(HashMap<String, Event>);
+pub(crate) struct EventMap(HashMap<String, Event>);
 
 impl<'de> Deserialize<'de> for EventMap {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>

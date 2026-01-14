@@ -6,7 +6,7 @@ use axum::{
 };
 use env_logger::Target;
 use log::LevelFilter;
-use optimizely::{decision::DecideOptions, Client};
+use optimizely::{Client, DecideOptions};
 use std::{
     sync::{Arc, RwLock},
     time::Duration,

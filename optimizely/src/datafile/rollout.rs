@@ -6,12 +6,13 @@ use std::collections::HashMap;
 use super::Experiment;
 
 #[derive(Deserialize, Debug)]
-pub struct Rollout {
+pub(crate) struct Rollout {
     id: String,
     experiments: Vec<Experiment>,
 }
 
 impl Rollout {
+    #[allow(dead_code)]
     pub fn id(&self) -> &str {
         &self.id
     }
@@ -22,7 +23,7 @@ impl Rollout {
 }
 
 #[derive(Debug)]
-pub struct RolloutMap(HashMap<String, Rollout>);
+pub(crate) struct RolloutMap(HashMap<String, Rollout>);
 
 impl<'de> Deserialize<'de> for RolloutMap {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>

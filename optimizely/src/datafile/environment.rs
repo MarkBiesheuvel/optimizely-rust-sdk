@@ -7,6 +7,7 @@ use super::{
     ExperimentMap, FeatureFlag, FeatureFlagMap, Revision, RolloutMap,
 };
 
+/// Each Datafile is for exactly one Environment, so most methods are implemented on Environment instead of Datafile
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 pub struct Environment {
@@ -65,7 +66,7 @@ impl Environment {
     }
 
     /// Get the flag with the given key
-    pub fn flag(&self, flag_key: &str) -> Option<&FeatureFlag> {
+    pub(crate) fn flag(&self, flag_key: &str) -> Option<&FeatureFlag> {
         self.feature_flags.get(flag_key).or_else(|| {
             log::warn!("Flag key does not exist in datafile");
             None
@@ -73,7 +74,7 @@ impl Environment {
     }
 
     /// Get the experiment with the given experiment ID
-    pub fn experiment(&self, experiment_id: &str) -> Option<&Experiment> {
+    pub(crate) fn experiment(&self, experiment_id: &str) -> Option<&Experiment> {
         self.experiments.get(experiment_id).or_else(|| {
             log::warn!("Experiment ID does not exist in datafile");
             None
@@ -81,7 +82,7 @@ impl Environment {
     }
 
     /// Get the rollout with the given rollout ID
-    pub fn rollout(&self, rollout_id: &str) -> Option<&Rollout> {
+    pub(crate) fn rollout(&self, rollout_id: &str) -> Option<&Rollout> {
         self.rollouts.get(rollout_id).or_else(|| {
             log::warn!("Rollout ID does not exist in datafile");
             None
@@ -89,7 +90,7 @@ impl Environment {
     }
 
     /// Get the event with the given key
-    pub fn event(&self, event_key: &str) -> Option<&Event> {
+    pub(crate) fn event(&self, event_key: &str) -> Option<&Event> {
         self.events.get(event_key).or_else(|| {
             log::warn!("Event key does not exist in datafile");
             None
@@ -97,7 +98,7 @@ impl Environment {
     }
 
     /// Get the attribute with the given key
-    pub fn attribute(&self, attribute_key: &str) -> Option<&Attribute> {
+    pub(crate) fn attribute(&self, attribute_key: &str) -> Option<&Attribute> {
         self.attributes.get(attribute_key).or_else(|| {
             log::warn!("Attribute key does not exist in datafile");
             None
@@ -105,7 +106,7 @@ impl Environment {
     }
 
     /// Get the audience with the given audience ID
-    pub fn audience(&self, audience_id: &str) -> Option<&Audience> {
+    pub(crate) fn audience(&self, audience_id: &str) -> Option<&Audience> {
         self.audiences.get(audience_id).or_else(|| {
             log::warn!("Audience key does not exist in datafile");
             None

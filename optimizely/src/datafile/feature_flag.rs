@@ -5,7 +5,7 @@ use std::collections::HashMap;
 /// Optimizely feature flag.
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
-pub struct FeatureFlag {
+pub(crate) struct FeatureFlag {
     key: String,
     rollout_id: String,
     experiment_ids: Vec<String>,
@@ -13,6 +13,7 @@ pub struct FeatureFlag {
 }
 
 impl FeatureFlag {
+    #[allow(dead_code)]
     pub fn key(&self) -> &str {
         &self.key
     }
@@ -27,7 +28,7 @@ impl FeatureFlag {
 }
 
 #[derive(Debug)]
-pub struct FeatureFlagMap(HashMap<String, FeatureFlag>);
+pub(crate) struct FeatureFlagMap(HashMap<String, FeatureFlag>);
 
 impl<'de> Deserialize<'de> for FeatureFlagMap {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>

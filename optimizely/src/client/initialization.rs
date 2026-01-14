@@ -4,9 +4,9 @@ use std::time::Duration;
 // Imports from crate
 use crate::client::{Client, ClientError};
 use crate::datafile::Datafile;
-use crate::decision::DecideOptions;
 #[cfg(feature = "online")]
 use crate::event_api::EventDispatcher;
+use crate::DecideOptions;
 
 /// Intermediate struct that is used to initialize a new [Client].
 ///

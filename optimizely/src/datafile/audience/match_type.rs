@@ -2,7 +2,7 @@ use serde::Deserialize;
 
 #[derive(Deserialize, Debug, PartialEq)]
 #[serde(rename_all = "snake_case")]
-pub enum MatchType {
+pub(crate) enum MatchType {
     Exists,
     Exact,
     Substring,

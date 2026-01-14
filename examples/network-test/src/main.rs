@@ -1,6 +1,6 @@
 use env_logger::Target;
 use log::LevelFilter;
-use optimizely::{event_api::BatchedEventDispatcher, Client, AttributeValue};
+use optimizely::{event_api::BatchedEventDispatcher, AttributeValue, Client};
 use std::error::Error;
 use std::{thread, time};
 

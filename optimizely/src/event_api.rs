@@ -2,9 +2,8 @@
 
 // Relative imports of sub modules
 pub use dispatcher::{BatchedEventDispatcher, EventDispatcher, SimpleEventDispatcher};
-pub use error::EventApiError;
-pub use request::Request;
+pub(crate) use error::EventApiError;
 
 mod dispatcher;
 mod error;
-pub mod request;
+pub(crate) mod request;

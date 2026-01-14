@@ -2,12 +2,8 @@
 use serde::{Deserialize, Deserializer};
 use std::collections::HashMap;
 
-pub use value::AttributeValue;
-
-mod value;
-
 #[derive(Deserialize, Debug)]
-pub struct Attribute {
+pub(crate) struct Attribute {
     id: String,
     key: String,
 }
@@ -25,7 +21,7 @@ impl Attribute {
 }
 
 #[derive(Debug)]
-pub struct AttributeMap(HashMap<String, Attribute>);
+pub(crate) struct AttributeMap(HashMap<String, Attribute>);
 
 impl<'de> Deserialize<'de> for AttributeMap {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>

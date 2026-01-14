@@ -41,22 +41,26 @@
 //! # Ok::<(), Box<dyn std::error::Error>>(())
 //! ```
 
-use crate::decision::DecideOptions;
-#[cfg(feature = "online")]
-use crate::event_api::EventDispatcher;
-use crate::{datafile::Datafile, event_api::SimpleEventDispatcher};
+// External imports
 use std::sync::{Arc, RwLock, RwLockReadGuard};
 use std::thread::{self, sleep};
+
+// Imports from crate
+use crate::{datafile::Datafile, event_api::SimpleEventDispatcher, DecideOptions};
+
+// Optional import
+#[cfg(feature = "online")]
+use crate::event_api::EventDispatcher;
 
 // Relative imports of sub modules
 pub use error::ClientError;
 pub use initialization::UninitializedClient;
-pub use user_attribute::{UserAttribute, UserAttributeMap};
+pub use user_attribute::UserAttribute;
 pub use user_context::UserContext;
 
 mod error;
 mod initialization;
-mod user_attribute;
+pub(crate) mod user_attribute;
 mod user_context;
 
 /// SDK client to interact with feature flags.

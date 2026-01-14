@@ -155,7 +155,10 @@ fn targeted_delivery() -> Result<(), Box<dyn Error>> {
 
     // Update user attribute, and assert new variation
     user_context.set_attribute("numberOfProductsInCart", AttributeValue::Integer(3));
-    assert_eq!(user_context.decide(flag_key).variation_key(), "variation_for_audience_with_more_than_1_product_in_cart");
+    assert_eq!(
+        user_context.decide(flag_key).variation_key(),
+        "variation_for_audience_with_more_than_1_product_in_cart"
+    );
 
     // Update user attribute, and assert new variation
     user_context.set_attribute("currentPath", AttributeValue::String("/checkout".into()));

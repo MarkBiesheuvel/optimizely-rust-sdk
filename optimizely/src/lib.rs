@@ -2,16 +2,17 @@
 #![cfg_attr(docsrs, feature(doc_cfg, doc_auto_cfg))]
 #![warn(missing_docs)]
 
+// Re-export the Client
 pub use client::Client;
-#[cfg(feature = "online")]
-pub use conversion::Conversion;
-pub use datafile::AttributeValue;
-pub use decision::Decision;
 
+// Re-export all types
+pub use types::*;
+
+// Standard modules
 pub mod client;
-#[cfg(feature = "online")]
-mod conversion;
 pub mod datafile;
-pub mod decision;
+mod types;
+
+// Optional module
 #[cfg(feature = "online")]
 pub mod event_api;

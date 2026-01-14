@@ -9,7 +9,7 @@ mod match_type;
 mod operator;
 
 #[derive(Deserialize, Debug)]
-pub struct Audience {
+pub(crate) struct Audience {
     id: String,
     #[allow(dead_code)]
     name: String,

@@ -1,6 +1,6 @@
 use super::match_type::MatchType;
 use super::operator::{NumericOperator, SemVerOperator, StringOperator};
-use crate::client::UserAttributeMap;
+use crate::client::user_attribute::UserAttributeMap;
 use crate::AttributeValue;
 use semver::Version;
 use serde::de::{Error, MapAccess, SeqAccess, Visitor};
@@ -22,7 +22,7 @@ enum Field {
 type AttributeName = String;
 
 #[derive(Debug, PartialEq)]
-pub enum Condition {
+pub(crate) enum Condition {
     AndSequence(Vec<Condition>),
     OrSequence(Vec<Condition>),
     Negation(Box<Condition>),
@@ -69,7 +69,7 @@ impl Condition {
             Condition::Negation(condition) => {
                 // Negate the result of condition within
                 !condition.does_match(user_attributes)
-            },
+            }
             Condition::Exists { attribute_name } => {
                 // Verify that attribute does exist
                 user_attributes.get(attribute_name).is_some()
@@ -232,7 +232,7 @@ impl<'de> Visitor<'de> for ConditionVisitor {
                     return Err(Error::custom("too many conditions found within not statement"));
                 }
                 let condition = match conditions.pop() {
-                    Some(condition) =>  condition,
+                    Some(condition) => condition,
                     None => {
                         return Err(Error::custom("no condition found within not statement"));
                     }
