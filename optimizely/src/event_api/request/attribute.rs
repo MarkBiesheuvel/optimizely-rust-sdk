@@ -14,7 +14,7 @@ pub struct Attribute {
     value: String,
 }
 
-impl From<&UserAttribute<'_>> for Attribute {
+impl From<&UserAttribute> for Attribute {
     fn from(user_attribute: &UserAttribute) -> Self {
         Attribute {
             id: user_attribute.id().into(),

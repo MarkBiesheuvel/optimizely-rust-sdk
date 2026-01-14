@@ -1,6 +1,9 @@
 // External imports
 use std::error::Error;
 
+//
+use optimizely::AttributeValue;
+
 // Relative imports of sub modules
 use common::setup;
 mod common;
@@ -13,8 +16,8 @@ fn user_context_set_attribute() -> Result<(), Box<dyn Error>> {
     let mut user_context = ctx.client.create_user_context("user123");
 
     // Override attributes on existing user context
-    user_context.set_attribute("is_employee", "true");
-    user_context.set_attribute("app_version", "1.3.2");
+    user_context.set_attribute("isLoggedIn", AttributeValue::Boolean(true));
+    user_context.set_attribute("appVersion", AttributeValue::String("1.3.2".into()));
 
     // Retrieve attributes again
     let attributes = user_context.user_attributes();
@@ -23,7 +26,7 @@ fn user_context_set_attribute() -> Result<(), Box<dyn Error>> {
     assert_eq!(attributes.len(), 2);
     assert!(attributes
         .iter()
-        .any(|attribute| attribute.id() == "23328260042"));
+        .any(|attribute| attribute.id() == "5714602848157696"));
 
     Ok(())
 }

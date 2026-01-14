@@ -53,7 +53,7 @@ All *unchecked* features are not supported in the Rust SDK, but are supported by
 - [ ] Decide options (others)
 - [X] Creating an user context
 - [X] Decide method consistent with other SDKs
-- [ ] Evaluating audience conditions
+- [X] Evaluating audience conditions
 - [ ] Variation variables
 - [ ] Forced decision methods
 - [ ] Mutual exclusion groups

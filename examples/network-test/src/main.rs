@@ -1,6 +1,6 @@
 use env_logger::Target;
 use log::LevelFilter;
-use optimizely::{event_api::BatchedEventDispatcher, Client};
+use optimizely::{event_api::BatchedEventDispatcher, Client, AttributeValue};
 use std::error::Error;
 use std::{thread, time};
 
@@ -26,8 +26,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     for i in 0..24 {
         let user_id = format!("user{}", i);
         let mut user_context = client.create_user_context(&user_id);
-        user_context.set_attribute("app_version", "0.5.0");
-        user_context.set_attribute("country", "nl");
+        user_context.set_attribute("app_version", AttributeValue::String("0.5.0".into()));
+        user_context.set_attribute("country", AttributeValue::String("nl".into()));
         let decision = user_context.decide(flag_key);
         thread::sleep(duration);
         drop(decision);

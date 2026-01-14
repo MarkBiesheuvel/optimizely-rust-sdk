@@ -6,6 +6,7 @@ use error_stack::{Report, Result, ResultExt};
 use std::ops::Deref;
 
 // Relative imports of sub modules
+pub use attribute::AttributeValue;
 pub(crate) use attribute::{Attribute, AttributeMap};
 use audience::AudienceMap;
 use environment::Environment;

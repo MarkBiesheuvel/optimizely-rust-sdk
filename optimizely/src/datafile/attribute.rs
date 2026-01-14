@@ -2,6 +2,10 @@
 use serde::{Deserialize, Deserializer};
 use std::collections::HashMap;
 
+pub use value::AttributeValue;
+
+mod value;
+
 #[derive(Deserialize, Debug)]
 pub struct Attribute {
     id: String,

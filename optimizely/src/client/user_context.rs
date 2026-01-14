@@ -7,6 +7,7 @@ use std::collections::HashMap;
 use crate::conversion::Conversion;
 use crate::datafile::{Experiment, FeatureFlag};
 use crate::decision::{DecideOptions, Decision};
+use crate::AttributeValue;
 
 // Imports from super
 use super::{Client, DatafileReadLock, UserAttribute, UserAttributeMap};
@@ -47,7 +48,7 @@ const MAX_RANGE_VALUE: f64 = 10_000_f64;
 pub struct UserContext<'a> {
     client: &'a Client,
     user_id: &'a str,
-    user_attributes: UserAttributeMap<'a>,
+    user_attributes: UserAttributeMap,
 }
 
 impl<'a> UserContext<'a> {
@@ -61,7 +62,11 @@ impl<'a> UserContext<'a> {
     }
 
     /// Add a new attribute to a user context
-    pub fn set_attribute(&mut self, key: impl Into<String>, value: &'a str) {
+    /// Note that the type is not verified,
+    ///     since the same attribute might be used in different conditions using different type comparisons
+    ///
+    /// TODO: implement type specific versions of this function, such as set_boolean_attribute
+    pub fn set_attribute(&mut self, key: impl Into<String>, value: AttributeValue) {
         let key = key.into();
         if let Some(datafile_attribute) = self.client.datafile().attribute(&key) {
             // Create user attribute by combining a value to a datafile attribute
@@ -123,6 +128,7 @@ impl UserContext<'_> {
     /// Decide which variation to show to a user
     pub fn decide<'a>(&self, flag_key: &'a str) -> Decision<'a> {
         let options = self.client().default_decide_options();
+        println!("{:?}", flag_key);
         self.decide_with_options(flag_key, &options)
     }
 
@@ -145,13 +151,9 @@ impl UserContext<'_> {
         let mut send_decision = !options.disable_decision_event;
 
         // Get the selected variation for the given flag
-        let decision = match self.decide_variation_for_flag(&datafile, flag_key, flag, &mut send_decision) {
-            Some(decision) => decision,
-            None => {
-                // No experiment or rollout found, or user does not qualify for any
-                return Decision::off(flag_key);
-            }
-        };
+        let decision = self
+            .decide_for_flag(&datafile, flag_key, flag, &mut send_decision)
+            .unwrap_or_else(|| Decision::off(flag_key));
 
         #[cfg(feature = "online")]
         if send_decision {
@@ -164,15 +166,17 @@ impl UserContext<'_> {
         decision
     }
 
-    fn decide_variation_for_flag<'a, 'b>(
+    fn decide_for_flag<'a, 'b>(
         &'b self, datafile: &'b DatafileReadLock<'b>, flag_key: &'a str, flag: &'b FeatureFlag,
         send_decision: &mut bool,
     ) -> Option<Decision<'a>> {
-        // If the user qualifies for an experiment, use that decision
-        let decision = match self.find_applicable_experiment(datafile, flag) {
-            Some(experiment) => self.decide_variation_for_experiment(flag_key, experiment),
-            None => None,
-        };
+        // Find first Experiment for which this user qualifies, and then use that decision
+        let decision = flag
+            .experiments_ids()
+            .iter()
+            .filter_map(|experiment_id| datafile.experiment(experiment_id))
+            .find(|experiment| self.is_in_target_audience(datafile, experiment))
+            .and_then(|experiment| self.decide_for_experiment(flag_key, experiment));
 
         match decision {
             Some(_) => {
@@ -186,27 +190,19 @@ impl UserContext<'_> {
                 *send_decision = false;
 
                 // No direct experiment found, let's look at the Rollout
-                let rollout = match datafile.rollout(flag.rollout_id()) {
-                    Some(rollout) => rollout,
-                    None => {
-                        // No rollout found
-                        return None;
-                    }
-                };
+                let rollout = datafile.rollout(flag.rollout_id())?;
 
-                // Find the first experiment within the Rollout for which this user qualifies
-                // TODO: match audiences
+                // Find first Experiment for which this user qualifies, and then use that decision
                 rollout
                     .experiments()
                     .iter()
-                    .find_map(|experiment| self.decide_variation_for_experiment(flag_key, experiment))
+                    .find(|experiment| self.is_in_target_audience(datafile, experiment))
+                    .and_then(|experiment| self.decide_for_experiment(flag_key, experiment))
             }
         }
     }
 
-    fn decide_variation_for_experiment<'a, 'b>(
-        &'b self, flag_key: &'a str, experiment: &'b Experiment,
-    ) -> Option<Decision<'a>> {
+    fn decide_for_experiment<'a, 'b>(&'b self, flag_key: &'a str, experiment: &'b Experiment) -> Option<Decision<'a>> {
         // Use references for the ids
         let user_id = self.user_id();
         let experiment_id = experiment.id();
@@ -232,38 +228,26 @@ impl UserContext<'_> {
             .map(|variation| Decision::from(flag_key, experiment, variation))
     }
 
-    // Find first Experiment for which this user qualifies
-    fn find_applicable_experiment<'b>(
-        &'b self, datafile: &'b DatafileReadLock<'b>, flag: &'b FeatureFlag,
-    ) -> Option<&'b Experiment> {
-        flag.experiments_ids()
-            .iter()
-            .filter_map(|experiment_id| datafile.experiment(experiment_id))
-            .find(|experiment| {
-                let audience_ids = experiment.audience_ids();
+    fn is_in_target_audience<'b>(&'b self, datafile: &'b DatafileReadLock<'b>, experiment: &'b Experiment) -> bool {
+        let audience_ids = experiment.audience_ids();
 
-                // If there are no audiences, everyone is welcome
-                if audience_ids.is_empty() {
-                    return true;
+        // If there are no audiences, everyone is welcome
+        if audience_ids.is_empty() {
+            return true;
+        }
+
+        // Otherwise, the user needs to match at least one audience
+        audience_ids.iter().any(|audience_id| {
+            // Retrieve the audience from the datafile
+            let audience = match datafile.audience(audience_id.as_ref()) {
+                Some(audience) => audience,
+                None => {
+                    // Not found in datafile, so user does not match
+                    return false;
                 }
+            };
 
-                // Otherwise, the user needs to match at least one audience
-                audience_ids
-                    .iter()
-                    .any(|audience_id| self.does_match_audience(datafile, audience_id))
-            })
-    }
-
-    fn does_match_audience<'b>(&self, datafile: &'b DatafileReadLock<'b>, audience_id: impl AsRef<str>) -> bool {
-        // Retrieve the audience from the datafile
-        let audience = match datafile.audience(audience_id.as_ref()) {
-            Some(audience) => audience,
-            None => {
-                // Not found in datafile, so user does not match
-                return false;
-            }
-        };
-
-        audience.condition().does_match(&self.user_attributes)
+            audience.condition().does_match(&self.user_attributes)
+        })
     }
 }

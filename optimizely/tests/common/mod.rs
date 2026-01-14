@@ -13,13 +13,13 @@ pub const ACCOUNT_ID: &str = "21537940595";
 
 // SDK key for the development environment of mark.biesheuvel@optimizely.com
 // This key only grants read access to a JSON file and does not grant any further permissions
-pub const SDK_KEY: &str = "KVpGWnzPGKvvQ8yeEWmJZ";
+pub const SDK_KEY: &str = "UCtKi3qiMkQpso1GTmBFY";
 
 // This is a bundled copy of the JSON file that can be downloaded with the SDK key
 pub const FILE_PATH: &str = "../datafiles/sandbox.json";
 
 // This is the revision number of the bundled datafile
-pub const REVISION: u32 = 544;
+pub const REVISION: u32 = 21;
 
 // In-memory thread-safe list of any type
 #[derive(Default)]

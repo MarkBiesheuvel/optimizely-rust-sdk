@@ -5,6 +5,7 @@
 pub use client::Client;
 #[cfg(feature = "online")]
 pub use conversion::Conversion;
+pub use datafile::AttributeValue;
 pub use decision::Decision;
 
 pub mod client;

@@ -7,7 +7,6 @@ use condition::Condition;
 mod condition;
 mod match_type;
 mod operator;
-mod value;
 
 #[derive(Deserialize, Debug)]
 pub struct Audience {
