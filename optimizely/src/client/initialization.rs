@@ -2,8 +2,9 @@ use error_stack::{Result, ResultExt};
 use std::time::Duration;
 
 // Imports from crate
-use crate::client::{Client, ClientError};
+use crate::client::Client;
 use crate::datafile::Datafile;
+use crate::error::ClientError;
 #[cfg(feature = "online")]
 use crate::event_api::EventDispatcher;
 use crate::DecideOptions;

@@ -4,7 +4,7 @@ use serde::Serialize;
 use std::collections::HashMap;
 
 // Imports from crate
-use crate::{event_api::EventApiError, Conversion, Decision};
+use crate::{error::EventApiError, Conversion, Decision};
 
 // Imports from super
 use super::Visitor;

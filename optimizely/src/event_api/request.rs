@@ -4,8 +4,9 @@
 use error_stack::{Result, ResultExt};
 
 //
-use super::EventApiError;
-use crate::{datafile::Datafile, Conversion, Decision};
+use crate::datafile::Datafile;
+use crate::error::EventApiError;
+use crate::{Conversion, Decision};
 
 // Relative imports of sub modules
 pub(crate) use payload::Payload;

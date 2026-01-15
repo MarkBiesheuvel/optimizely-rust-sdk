@@ -2,7 +2,10 @@
 use std::error::Error;
 
 // Imports from Optimizely crate
-use optimizely::{client::ClientError, datafile::DatafileError, Client};
+use optimizely::{
+    error::{ClientError, DatafileError},
+    Client,
+};
 
 // Relative imports of sub modules
 use common::{ACCOUNT_ID, FILE_PATH, REVISION};

@@ -2,6 +2,7 @@
 use std::fs::File;
 use std::io::Read;
 
+use crate::error::DatafileError;
 use error_stack::{Report, Result, ResultExt};
 use std::ops::Deref;
 
@@ -9,7 +10,6 @@ use std::ops::Deref;
 pub(crate) use attribute::{Attribute, AttributeMap};
 use audience::AudienceMap;
 use environment::Environment;
-pub use error::DatafileError;
 pub(crate) use event::{Event, EventMap};
 pub(crate) use experiment::{Experiment, ExperimentMap};
 pub(crate) use feature_flag::{FeatureFlag, FeatureFlagMap};
@@ -21,7 +21,6 @@ pub(crate) use variation::{Variation, VariationMap};
 mod attribute;
 mod audience;
 mod environment;
-mod error;
 mod event;
 mod experiment;
 mod feature_flag;

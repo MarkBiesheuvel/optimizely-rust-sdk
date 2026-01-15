@@ -11,6 +11,7 @@ pub use types::*;
 // Standard modules
 pub mod client;
 pub mod datafile;
+pub mod error;
 mod types;
 
 // Optional module
