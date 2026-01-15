@@ -4,13 +4,10 @@ use std::collections::HashMap;
 
 // Imports from crate
 use crate::datafile::{Experiment, FeatureFlag};
-use crate::{AttributeValue, Conversion, DecideOptions, Decision};
+use crate::{AttributeValue, Conversion, DecideOptions, Decision, UserAttribute, UserAttributeMap};
 
 // Imports from super
-use super::{
-    user_attribute::{UserAttribute, UserAttributeMap},
-    Client, DatafileReadLock,
-};
+use super::{Client, DatafileReadGuard};
 
 /// Constant used for the hashing algorithm
 const HASH_SEED: u32 = 1;
@@ -122,19 +119,18 @@ impl UserContext<'_> {
             // Ignore result of the send_decision function
             self.client
                 .event_dispatcher()
-                .send_conversion_event(self, &conversion);
+                .send_conversion_event(self, conversion);
         }
     }
 
     /// Decide which variation to show to a user
-    pub fn decide<'a>(&self, flag_key: &'a str) -> Decision<'a> {
+    pub fn decide(&self, flag_key: &str) -> Decision {
         let options = self.client().default_decide_options();
-        println!("{:?}", flag_key);
         self.decide_with_options(flag_key, &options)
     }
 
     /// Decide which variation to show to a user
-    pub fn decide_with_options<'a>(&self, flag_key: &'a str, options: &DecideOptions) -> Decision<'a> {
+    pub fn decide_with_options(&self, flag_key: &str, options: &DecideOptions) -> Decision {
         // Acquire datafile read lock
         let datafile = self.client.datafile();
 
@@ -153,31 +149,30 @@ impl UserContext<'_> {
 
         // Get the selected variation for the given flag
         let decision = self
-            .decide_for_flag(&datafile, flag_key, flag, &mut send_decision)
+            .decide_for_flag(&datafile, flag, &mut send_decision)
             .unwrap_or_else(|| Decision::off(flag_key));
 
         #[cfg(feature = "online")]
         if send_decision {
             self.client
                 .event_dispatcher()
-                .send_decision_event(self, &decision);
+                .send_decision_event(self, decision.clone());
         }
 
         // Return
         decision
     }
 
-    fn decide_for_flag<'a, 'b>(
-        &'b self, datafile: &'b DatafileReadLock<'b>, flag_key: &'a str, flag: &'b FeatureFlag,
-        send_decision: &mut bool,
-    ) -> Option<Decision<'a>> {
+    fn decide_for_flag(
+        &self, datafile: &DatafileReadGuard<'_>, flag: &FeatureFlag, send_decision: &mut bool,
+    ) -> Option<Decision> {
         // Find first Experiment for which this user qualifies, and then use that decision
         let decision = flag
             .experiments_ids()
             .iter()
             .filter_map(|experiment_id| datafile.experiment(experiment_id))
             .find(|experiment| self.is_in_target_audience(datafile, experiment))
-            .and_then(|experiment| self.decide_for_experiment(flag_key, experiment));
+            .and_then(|experiment| self.decide_for_experiment(flag, experiment));
 
         match decision {
             Some(_) => {
@@ -198,12 +193,12 @@ impl UserContext<'_> {
                     .experiments()
                     .iter()
                     .find(|experiment| self.is_in_target_audience(datafile, experiment))
-                    .and_then(|experiment| self.decide_for_experiment(flag_key, experiment))
+                    .and_then(|experiment| self.decide_for_experiment(flag, experiment))
             }
         }
     }
 
-    fn decide_for_experiment<'a, 'b>(&'b self, flag_key: &'a str, experiment: &'b Experiment) -> Option<Decision<'a>> {
+    fn decide_for_experiment(&self, flag: &FeatureFlag, experiment: &Experiment) -> Option<Decision> {
         // Use references for the ids
         let user_id = self.user_id();
         let experiment_id = experiment.id();
@@ -226,10 +221,10 @@ impl UserContext<'_> {
             // Map it to a Variation struct
             .and_then(|variation_id| experiment.variation(variation_id))
             // Combine it with the experiment
-            .map(|variation| Decision::from(flag_key, experiment, variation))
+            .map(|variation| Decision::from(flag, experiment, variation))
     }
 
-    fn is_in_target_audience<'b>(&'b self, datafile: &'b DatafileReadLock<'b>, experiment: &'b Experiment) -> bool {
+    fn is_in_target_audience(&self, datafile: &DatafileReadGuard<'_>, experiment: &Experiment) -> bool {
         let audience_ids = experiment.audience_ids();
 
         // If there are no audiences, everyone is welcome

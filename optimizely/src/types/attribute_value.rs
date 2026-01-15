@@ -1,6 +1,6 @@
 use serde::Deserialize;
 
-#[derive(Deserialize, Debug)]
+#[derive(Clone, Deserialize, Debug)]
 #[serde(untagged)]
 #[non_exhaustive]
 /// The value of a user attribute
@@ -19,9 +19,9 @@ pub enum AttributeValue {
 }
 
 // Conversion to String for Event API
-impl Into<String> for &AttributeValue {
-    fn into(self) -> String {
-        match self {
+impl From<&AttributeValue> for String {
+    fn from(value: &AttributeValue) -> Self {
+        match value {
             AttributeValue::Integer(number) => number.to_string(),
             AttributeValue::Decimal(number) => number.to_string(),
             AttributeValue::Boolean(bool) => bool.to_string(),

@@ -1,5 +1,5 @@
 use super::EventDispatcher;
-use crate::event_api::request::{ConversionEvent, DecisionEvent, Request, Visitor};
+use crate::event_api::request::{Request, Visitor};
 use crate::{client::UserContext, datafile::Datafile};
 use crate::{Conversion, Decision};
 use std::sync::mpsc;
@@ -11,8 +11,8 @@ struct ThreadMessage {
     event: EventEnum,
 }
 enum EventEnum {
-    Conversion(ConversionEvent),
-    Decision(DecisionEvent),
+    Conversion(Conversion),
+    Decision(Decision),
 }
 
 // Upper limit to number of events in a batch
@@ -72,15 +72,11 @@ impl BatchedEventDispatcher {
 }
 
 impl EventDispatcher for BatchedEventDispatcher {
-    fn send_conversion_event(&self, user_context: &UserContext, conversion: &Conversion) {
-        // Convert from optimizely::Conversion to optimizely::event_api::request::ConversionEvent
-        let event = ConversionEvent::from(conversion);
-        self.transmit(user_context, EventEnum::Conversion(event))
+    fn send_conversion_event(&self, user_context: &UserContext, conversion: Conversion) {
+        self.transmit(user_context, EventEnum::Conversion(conversion))
     }
 
-    fn send_decision_event(&self, user_context: &UserContext, decision: &Decision) {
-        // Convert from optimizely::Decision to optimizely::event_api::request::DecisionEvent
-        let decision = DecisionEvent::from(decision);
+    fn send_decision_event(&self, user_context: &UserContext, decision: Decision) {
         self.transmit(user_context, EventEnum::Decision(decision))
     }
 }

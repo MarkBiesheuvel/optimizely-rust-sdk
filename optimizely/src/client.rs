@@ -55,12 +55,10 @@ use crate::event_api::EventDispatcher;
 // Relative imports of sub modules
 pub use error::ClientError;
 pub use initialization::UninitializedClient;
-pub use user_attribute::UserAttribute;
 pub use user_context::UserContext;
 
 mod error;
 mod initialization;
-pub(crate) mod user_attribute;
 mod user_context;
 
 /// SDK client to interact with feature flags.
@@ -73,7 +71,7 @@ pub struct Client {
     event_dispatcher: Box<dyn EventDispatcher>,
 }
 
-type DatafileReadLock<'a> = RwLockReadGuard<'a, Datafile>;
+type DatafileReadGuard<'a> = RwLockReadGuard<'a, Datafile>;
 
 impl From<UninitializedClient> for Client {
     fn from(options: UninitializedClient) -> Self {
@@ -141,7 +139,7 @@ impl Client {
     }
 
     /// Get the datafile within the client
-    pub fn datafile(&self) -> DatafileReadLock<'_> {
+    pub fn datafile(&self) -> DatafileReadGuard<'_> {
         // Obtain read lock
         let lock_result = self.datafile_lock.read();
 

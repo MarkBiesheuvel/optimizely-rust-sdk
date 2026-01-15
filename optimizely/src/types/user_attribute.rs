@@ -1,16 +1,16 @@
+// External imports
+use serde::ser::{Serialize, SerializeStruct, Serializer};
+use std::fmt::Debug;
+
+use super::AttributeValue;
 use crate::datafile;
-use crate::AttributeValue;
-use std::{
-    collections::HashMap,
-    ops::{Deref, DerefMut},
-};
 
 /// An attribute of the user.
 ///
 /// The Event API expects all attributes to be a text, hence why we always store the value as a &str.
 ///
 /// Unfortunately, references to the datafile have to be cloned in order to release the read/write lock
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct UserAttribute {
     id: String,
     key: String,
@@ -43,21 +43,18 @@ impl UserAttribute {
     }
 }
 
-#[derive(Debug, Default)]
-/// Mapping of attribute key to UserAttribute
-/// TODO: rewrite to map from datafile::Attribute to value
-pub(crate) struct UserAttributeMap(HashMap<String, UserAttribute>);
-
-impl<'a> Deref for UserAttributeMap {
-    type Target = HashMap<String, UserAttribute>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl DerefMut for UserAttributeMap {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
+impl Serialize for UserAttribute {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut st = serializer.serialize_struct("UserAttribute", 4)?;
+        st.serialize_field("entity_id", &self.id)?;
+        st.serialize_field("key", &self.key)?;
+        st.serialize_field("attribute_type", "custom")?;
+        // Convert the dynamic type into a String,
+        // then pass it to the "serialize_field" method which accepts a generic type
+        st.serialize_field("value", &String::from(&self.value))?;
+        st.end()
     }
 }

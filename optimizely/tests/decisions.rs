@@ -16,8 +16,6 @@ macro_rules! assert_decision {
         // Make decision for user
         let decision = user_context.decide($flag_key);
 
-        println!("{:?}", decision);
-
         // Assert the decision is consistent with given values
         assert_eq!(decision.enabled(), $enabled);
         assert_eq!(decision.variation_key(), $variation_key);

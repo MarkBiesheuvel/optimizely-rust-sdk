@@ -9,8 +9,8 @@ use crate::{client::UserContext, Conversion, Decision};
 /// TODO: add example again
 pub trait EventDispatcher: Send + Sync + Any {
     /// Send conversion event to destination
-    fn send_conversion_event(&self, user_context: &UserContext, conversion: &Conversion);
+    fn send_conversion_event(&self, user_context: &UserContext, conversion: Conversion);
 
     /// Send event to destination
-    fn send_decision_event(&self, user_context: &UserContext, decision: &Decision);
+    fn send_decision_event(&self, user_context: &UserContext, decision: Decision);
 }

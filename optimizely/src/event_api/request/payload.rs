@@ -3,10 +3,11 @@ use error_stack::{Result, ResultExt};
 use serde::Serialize;
 use std::collections::HashMap;
 
-use crate::event_api::EventApiError;
+// Imports from crate
+use crate::{event_api::EventApiError, Conversion, Decision};
 
 // Imports from super
-use super::{ConversionEvent, DecisionEvent, Visitor};
+use super::Visitor;
 
 // Information regarding the SDK client
 const CLIENT_NAME: &str = "rust-sdk";
@@ -45,7 +46,7 @@ impl Payload {
     }
 
     /// Add a conversion event for a specific visitor to the payload
-    pub fn add_conversion_event(&mut self, mut visitor: Visitor, event: ConversionEvent) {
+    pub fn add_conversion_event(&mut self, mut visitor: Visitor, event: Conversion) {
         log::debug!("Adding conversion event to payload");
 
         // Add custom event
@@ -56,7 +57,7 @@ impl Payload {
     }
 
     /// Add a decision event for a specific visitor to the payload
-    pub fn add_decision_event(&mut self, mut visitor: Visitor, decision: DecisionEvent) {
+    pub fn add_decision_event(&mut self, mut visitor: Visitor, decision: Decision) {
         log::debug!("Adding decision event to payload");
 
         // Copy campaign_id as entity_id
@@ -70,7 +71,7 @@ impl Payload {
         let tags = HashMap::default();
 
         // Add campaign_activated event
-        let event = ConversionEvent::new(entity_id, ACTIVATE_EVENT_KEY.into(), properties, tags);
+        let event = Conversion::new(ACTIVATE_EVENT_KEY.to_owned(), entity_id, properties, tags);
         visitor.add_conversion_event(event);
 
         // Add to the list

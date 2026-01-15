@@ -68,7 +68,7 @@ impl Environment {
     /// Get the flag with the given key
     pub(crate) fn flag(&self, flag_key: &str) -> Option<&FeatureFlag> {
         self.feature_flags.get(flag_key).or_else(|| {
-            log::warn!("Flag key does not exist in datafile");
+            log::warn!("Flag key '{flag_key}' does not exist in datafile");
             None
         })
     }
@@ -76,7 +76,7 @@ impl Environment {
     /// Get the experiment with the given experiment ID
     pub(crate) fn experiment(&self, experiment_id: &str) -> Option<&Experiment> {
         self.experiments.get(experiment_id).or_else(|| {
-            log::warn!("Experiment ID does not exist in datafile");
+            log::warn!("Experiment ID '{experiment_id}' does not exist in datafile");
             None
         })
     }
@@ -84,7 +84,7 @@ impl Environment {
     /// Get the rollout with the given rollout ID
     pub(crate) fn rollout(&self, rollout_id: &str) -> Option<&Rollout> {
         self.rollouts.get(rollout_id).or_else(|| {
-            log::warn!("Rollout ID does not exist in datafile");
+            log::warn!("Rollout ID '{rollout_id}' does not exist in datafile");
             None
         })
     }
@@ -92,7 +92,7 @@ impl Environment {
     /// Get the event with the given key
     pub(crate) fn event(&self, event_key: &str) -> Option<&Event> {
         self.events.get(event_key).or_else(|| {
-            log::warn!("Event key does not exist in datafile");
+            log::warn!("Event key '{event_key}' does not exist in datafile");
             None
         })
     }
@@ -100,7 +100,7 @@ impl Environment {
     /// Get the attribute with the given key
     pub(crate) fn attribute(&self, attribute_key: &str) -> Option<&Attribute> {
         self.attributes.get(attribute_key).or_else(|| {
-            log::warn!("Attribute key does not exist in datafile");
+            log::warn!("Attribute key '{attribute_key}' does not exist in datafile");
             None
         })
     }
@@ -108,7 +108,7 @@ impl Environment {
     /// Get the audience with the given audience ID
     pub(crate) fn audience(&self, audience_id: &str) -> Option<&Audience> {
         self.audiences.get(audience_id).or_else(|| {
-            log::warn!("Audience key does not exist in datafile");
+            log::warn!("Audience id '{audience_id}' does not exist in datafile");
             None
         })
     }

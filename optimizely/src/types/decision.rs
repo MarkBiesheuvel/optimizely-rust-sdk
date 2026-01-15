@@ -1,17 +1,16 @@
 //! Result of a feature flag
 
-// Relative imports of sub modules
-pub use decide_options::DecideOptions;
+// External imports
+use serde::ser::{Serialize, SerializeStruct, Serializer};
 
-use crate::datafile;
-mod decide_options;
+use crate::datafile::{Experiment, FeatureFlag, Variation};
 
 /// Decision for a specific user and feature flag
 ///
 /// Unfortunately, references to the datafile have to be cloned in order to release the read/write lock
 #[derive(Debug, Clone)]
-pub struct Decision<'a> {
-    flag_key: &'a str,
+pub struct Decision {
+    flag_key: String,
     campaign_id: String,
     experiment_id: String,
     variation_id: String,
@@ -19,12 +18,11 @@ pub struct Decision<'a> {
     enabled: bool,
 }
 
-impl Decision<'_> {
-    pub(crate) fn from<'a>(
-        flag_key: &'a str, experiment: &datafile::Experiment, variation: &datafile::Variation,
-    ) -> Decision<'a> {
+impl Decision {
+    pub(crate) fn from(flag: &FeatureFlag, experiment: &Experiment, variation: &Variation) -> Decision {
+        // Unfortunately, we will have to clone all Strings in order to release the read/write lock on the Datafile
         Decision {
-            flag_key,
+            flag_key: flag.key().into(),
             campaign_id: experiment.campaign_id().into(),
             experiment_id: experiment.id().into(),
             variation_id: variation.id().into(),
@@ -33,9 +31,9 @@ impl Decision<'_> {
         }
     }
 
-    pub(crate) fn off(flag_key: &str) -> Decision<'_> {
+    pub(crate) fn off(flag_key: &str) -> Decision {
         Decision {
-            flag_key,
+            flag_key: flag_key.into(),
             campaign_id: String::default(),
             experiment_id: String::default(),
             variation_id: String::default(),
@@ -46,7 +44,7 @@ impl Decision<'_> {
 
     /// Get the flag key for which this decision was made
     pub fn flag_key(&self) -> &str {
-        self.flag_key
+        &self.flag_key
     }
 
     /// Get whether the flag should be enabled or disable
@@ -72,5 +70,19 @@ impl Decision<'_> {
     /// Get the variation key that was decided
     pub fn variation_key(&self) -> &str {
         &self.variation_key
+    }
+}
+
+impl Serialize for Decision {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut st = serializer.serialize_struct("Decision", 4)?;
+        st.serialize_field("campaign_id", self.campaign_id())?;
+        st.serialize_field("experiment_id", self.experiment_id())?;
+        st.serialize_field("variation_id", self.variation_id())?;
+        st.serialize_field("is_campaign_holdback", &false)?;
+        st.end()
     }
 }

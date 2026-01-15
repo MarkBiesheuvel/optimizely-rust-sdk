@@ -1,21 +1,20 @@
-// External imports
 use serde::Serialize;
 
 // Imports from crate
-use crate::client::UserContext;
+use crate::{client::UserContext, Conversion, Decision, UserAttribute};
 
 // Imports from super
-use super::{Attribute, ConversionEvent, DecisionEvent, Snapshot};
+use super::Snapshot;
 
 #[derive(Serialize)]
 pub struct Visitor {
     visitor_id: String,
-    attributes: Vec<Attribute>,
+    attributes: Vec<UserAttribute>,
     snapshots: [Snapshot; 1],
 }
 
 impl Visitor {
-    pub fn new(visitor_id: String, attributes: Vec<Attribute>) -> Visitor {
+    pub fn new(visitor_id: String, attributes: Vec<UserAttribute>) -> Visitor {
         Visitor {
             visitor_id,
             attributes,
@@ -23,11 +22,11 @@ impl Visitor {
         }
     }
 
-    pub fn add_decision_event(&mut self, decision: DecisionEvent) {
+    pub fn add_decision_event(&mut self, decision: Decision) {
         self.snapshots[0].add_decision_event(decision);
     }
 
-    pub fn add_conversion_event(&mut self, event: ConversionEvent) {
+    pub fn add_conversion_event(&mut self, event: Conversion) {
         self.snapshots[0].add_conversion_event(event);
     }
 }
@@ -38,8 +37,8 @@ impl From<&UserContext<'_>> for Visitor {
         let attributes = user
             .user_attributes()
             .into_iter()
-            .map(Attribute::from)
-            .collect();
+            .map(|attribute| attribute.clone())
+            .collect::<Vec<_>>();
 
         Visitor::new(user_id, attributes)
     }

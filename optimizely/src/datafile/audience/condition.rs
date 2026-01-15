@@ -1,7 +1,6 @@
 use super::match_type::MatchType;
 use super::operator::{NumericOperator, SemVerOperator, StringOperator};
-use crate::client::user_attribute::UserAttributeMap;
-use crate::AttributeValue;
+use crate::{AttributeValue, UserAttributeMap};
 use semver::Version;
 use serde::de::{Error, MapAccess, SeqAccess, Visitor};
 use serde::{Deserialize, Deserializer};

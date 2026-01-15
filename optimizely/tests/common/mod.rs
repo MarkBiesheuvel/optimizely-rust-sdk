@@ -53,11 +53,11 @@ pub struct EventStore {
 
 // Implementing the EventDispatcher using the interior mutability pattern
 impl EventDispatcher for EventStore {
-    fn send_conversion_event(&self, _user_context: &UserContext, _conversion: &Conversion) {
+    fn send_conversion_event(&self, _user_context: &UserContext, _conversion: Conversion) {
         self.conversion_counter.increment();
     }
 
-    fn send_decision_event(&self, _user_context: &UserContext, _decision: &Decision) {
+    fn send_decision_event(&self, _user_context: &UserContext, _decision: Decision) {
         self.decision_counter.increment();
     }
 }
