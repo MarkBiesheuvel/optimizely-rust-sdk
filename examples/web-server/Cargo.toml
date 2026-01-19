@@ -3,6 +3,9 @@ name = "web-server"
 version = "0.1.0"
 edition = "2021"
 publish = false
+license = "Apache-2.0"
+description = "Example of a web server using Optimizely"
+repository = "https://github.com/MarkBiesheuvel/optimizely-rust-sdk/tree/main/examples/web-server"
 
 [dependencies]
 env_logger = "^0.10"

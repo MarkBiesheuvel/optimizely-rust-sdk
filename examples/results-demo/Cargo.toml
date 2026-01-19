@@ -2,6 +2,10 @@
 name = "results-demo"
 version = "0.1.0"
 edition = "2021"
+publish = false
+license = "Apache-2.0"
+description = "Example that generates a sample for the results dashboard"
+repository = "https://github.com/MarkBiesheuvel/optimizely-rust-sdk/tree/main/examples/results-demo"
 
 [dependencies]
 rand = "0.8.5"
