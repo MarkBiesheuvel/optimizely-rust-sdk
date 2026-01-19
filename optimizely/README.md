@@ -44,7 +44,7 @@ All *unchecked* features are not supported in the Rust SDK, but are supported by
 
 - [x] Initialize client from local datafile
 - [x] Initialize client from SDK key
-- [ ] Periodically poll latest datafile
+- [x] Periodically poll latest datafile
 - [x] Event dispatcher (synchronous)
 - [x] Event dispatcher (batched)
 - [ ] Logger
