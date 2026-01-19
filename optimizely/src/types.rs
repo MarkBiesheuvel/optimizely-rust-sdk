@@ -1,5 +1,6 @@
 // Re-export all types
 pub use attribute_value::AttributeValue;
+#[cfg(feature = "online")]
 pub use conversion::Conversion;
 pub use decide_options::DecideOptions;
 pub use decision::Decision;
@@ -7,6 +8,7 @@ pub use user_attribute::UserAttribute;
 pub(crate) use user_attribute_map::UserAttributeMap;
 
 mod attribute_value;
+#[cfg(feature = "online")]
 mod conversion;
 mod decide_options;
 mod decision;

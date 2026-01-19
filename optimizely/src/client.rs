@@ -43,6 +43,7 @@
 
 // External imports
 use std::sync::{Arc, RwLock, RwLockReadGuard};
+#[cfg(feature = "online")]
 use std::thread::{self, sleep};
 
 // Imports from crate
@@ -81,45 +82,53 @@ impl From<UninitializedClient> for Client {
 
         let default_decide_options = options.default_decide_options.unwrap_or_default();
 
-        // Clone SDK key so it can be moved to the polling thread
-        let sdk_key = options.datafile.sdk_key().to_owned();
-        let mut current_revision = options.datafile.revision();
-
+        #[cfg(not(feature = "online"))]
         // Store the datafile in a reference counted read/write lock
         let datafile_lock = Arc::new(RwLock::new(options.datafile));
 
-        // Clone the reference
-        let datafile_lock_clone = datafile_lock.clone();
+        #[cfg(feature = "online")]
+        let datafile_lock = {
+            // Clone SDK key so it can be moved to the polling thread
+            let sdk_key = options.datafile.sdk_key().to_owned();
+            let mut current_revision = options.datafile.revision();
 
-        // TODO: make auto update only possible when the online feature is enabled
-        // Spawn a thread to update the datafile in the background if update interval is set
-        if let Some(interval) = options.update_interval {
-            thread::spawn(move || {
-                log::debug!("Starting thread for datafile polling");
+            // Store the datafile in a reference counted read/write lock
+            let datafile_lock = Arc::new(RwLock::new(options.datafile));
 
-                loop {
-                    log::debug!("Fetching latest datafile");
+            // Clone the reference
+            let datafile_lock_clone = datafile_lock.clone();
 
-                    // Request new datafile
-                    if let Ok(datafile) = Datafile::from_sdk_key(&sdk_key) {
-                        let latest_revision = datafile.revision();
+            // Spawn a thread to update the datafile in the background if update interval is set
+            if let Some(interval) = options.update_interval {
+                thread::spawn(move || {
+                    log::debug!("Starting thread for datafile polling");
 
-                        // Only acquire write lock if revision changed
-                        if current_revision < latest_revision {
-                            log::info!("Updating datafile from {current_revision} to {latest_revision}");
-                            if let Ok(mut lock_guard) = datafile_lock_clone.write() {
-                                *lock_guard = datafile;
-                                current_revision = latest_revision;
-                            } else {
-                                log::error!("Failed to acquire write lock on datafile")
+                    loop {
+                        log::debug!("Fetching latest datafile");
+
+                        // Request new datafile
+                        if let Ok(datafile) = Datafile::from_sdk_key(&sdk_key) {
+                            let latest_revision = datafile.revision();
+
+                            // Only acquire write lock if revision changed
+                            if current_revision < latest_revision {
+                                log::info!("Updating datafile from {current_revision} to {latest_revision}");
+                                if let Ok(mut lock_guard) = datafile_lock_clone.write() {
+                                    *lock_guard = datafile;
+                                    current_revision = latest_revision;
+                                } else {
+                                    log::error!("Failed to acquire write lock on datafile")
+                                }
                             }
                         }
-                    }
 
-                    sleep(interval);
-                }
-            });
-        }
+                        sleep(interval);
+                    }
+                });
+            }
+
+            datafile_lock
+        };
 
         Client {
             datafile_lock,

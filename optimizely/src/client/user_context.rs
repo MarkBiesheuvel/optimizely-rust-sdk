@@ -1,10 +1,13 @@
 // External imports
 use murmur3::murmur3_32 as murmur3_hash;
+#[cfg(feature = "online")]
 use std::collections::HashMap;
 
 // Imports from crate
 use crate::datafile::{Experiment, FeatureFlag};
-use crate::{AttributeValue, Conversion, DecideOptions, Decision, UserAttribute, UserAttributeMap};
+#[cfg(feature = "online")]
+use crate::Conversion;
+use crate::{AttributeValue, DecideOptions, Decision, UserAttribute, UserAttributeMap};
 
 // Imports from super
 use super::{Client, DatafileReadGuard};

@@ -10,6 +10,7 @@ use std::ops::Deref;
 pub(crate) use attribute::{Attribute, AttributeMap};
 use audience::AudienceMap;
 use environment::Environment;
+#[cfg(feature = "online")]
 pub(crate) use event::{Event, EventMap};
 pub(crate) use experiment::{Experiment, ExperimentMap};
 pub(crate) use feature_flag::{FeatureFlag, FeatureFlagMap};
@@ -21,6 +22,7 @@ pub(crate) use variation::{Variation, VariationMap};
 mod attribute;
 mod audience;
 mod environment;
+#[cfg(feature = "online")]
 mod event;
 mod experiment;
 mod feature_flag;

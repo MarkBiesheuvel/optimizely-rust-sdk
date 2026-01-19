@@ -1,4 +1,5 @@
 use error_stack::{Result, ResultExt};
+#[cfg(feature = "online")]
 use std::time::Duration;
 
 // Imports from crate
@@ -14,8 +15,9 @@ use crate::DecideOptions;
 /// See [super] for examples.
 pub struct UninitializedClient {
     pub(crate) datafile: Datafile,
-    pub(crate) update_interval: Option<Duration>,
     pub(crate) default_decide_options: Option<DecideOptions>,
+    #[cfg(feature = "online")]
+    pub(crate) update_interval: Option<Duration>,
     #[cfg(feature = "online")]
     pub(crate) event_dispatcher: Option<Box<dyn EventDispatcher>>,
 }
@@ -53,8 +55,9 @@ impl UninitializedClient {
     pub(super) fn new(datafile: Datafile) -> UninitializedClient {
         UninitializedClient {
             datafile,
-            update_interval: None,
             default_decide_options: None,
+            #[cfg(feature = "online")]
+            update_interval: None,
             #[cfg(feature = "online")]
             event_dispatcher: None,
         }
@@ -97,6 +100,7 @@ impl UninitializedClient {
     }
 
     /// Automatically fetch the latest datafile in a regular interval
+    #[cfg(feature = "online")]
     pub fn with_update_interval(mut self, interval: Duration) -> UninitializedClient {
         // Store interval
         self.update_interval = Some(interval);

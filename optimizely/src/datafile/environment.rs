@@ -3,9 +3,11 @@ use serde::Deserialize;
 
 // Imports from super
 use super::{
-    audience::Audience, rollout::Rollout, Attribute, AttributeMap, AudienceMap, Event, EventMap, Experiment,
-    ExperimentMap, FeatureFlag, FeatureFlagMap, Revision, RolloutMap,
+    audience::Audience, rollout::Rollout, Attribute, AttributeMap, AudienceMap, Experiment, ExperimentMap, FeatureFlag,
+    FeatureFlagMap, Revision, RolloutMap,
 };
+#[cfg(feature = "online")]
+use super::{Event, EventMap};
 
 /// Each Datafile is for exactly one Environment, so most methods are implemented on Environment instead of Datafile
 #[derive(Deserialize, Debug)]
@@ -19,6 +21,7 @@ pub struct Environment {
     bot_filtering: bool,
     #[serde(rename = "anonymizeIP")]
     anonymize_ip: bool,
+    #[cfg(feature = "online")]
     events: EventMap,
     attributes: AttributeMap,
     #[serde(rename = "typedAudiences")]
@@ -90,6 +93,7 @@ impl Environment {
     }
 
     /// Get the event with the given key
+    #[cfg(feature = "online")]
     pub(crate) fn event(&self, event_key: &str) -> Option<&Event> {
         self.events.get(event_key).or_else(|| {
             log::warn!("Event key '{event_key}' does not exist in datafile");
