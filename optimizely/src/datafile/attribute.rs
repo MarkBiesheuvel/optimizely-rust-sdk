@@ -3,43 +3,42 @@ use serde::{Deserialize, Deserializer};
 use std::collections::HashMap;
 
 #[derive(Deserialize, Debug)]
-pub(crate) struct Event {
+pub(crate) struct Attribute {
     id: String,
     key: String,
 }
 
-impl Event {
+impl Attribute {
     /// Getter for `id` field
     pub fn id(&self) -> &str {
         &self.id
     }
 
     /// Getter for `key` field
-    #[allow(dead_code)]
     pub fn key(&self) -> &str {
         &self.key
     }
 }
 
 #[derive(Debug)]
-pub(crate) struct EventMap(HashMap<String, Event>);
+pub(crate) struct AttributeMap(HashMap<String, Attribute>);
 
-impl<'de> Deserialize<'de> for EventMap {
+impl<'de> Deserialize<'de> for AttributeMap {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
     {
         let mut map = HashMap::new();
-        for event in Vec::<Event>::deserialize(deserializer)? {
-            map.insert(event.key.clone(), event);
+        for attribute in Vec::<Attribute>::deserialize(deserializer)? {
+            map.insert(attribute.key.clone(), attribute);
         }
 
         Ok(Self(map))
     }
 }
 
-impl EventMap {
-    pub fn get(&self, key: &str) -> Option<&Event> {
+impl AttributeMap {
+    pub fn get(&self, key: &str) -> Option<&Attribute> {
         self.0.get(key)
     }
 }

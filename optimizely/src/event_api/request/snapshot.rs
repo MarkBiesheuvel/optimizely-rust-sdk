@@ -1,40 +1,22 @@
 // External imports
 use serde::Serialize;
 
-use crate::{Conversion as CrateConversion, Decision as CrateDecision};
-
-// Imports from super
-use super::{Decision as PayloadDecision, Event as PayloadEvent};
+// Imports from crate
+use crate::{Conversion, Decision};
 
 #[derive(Serialize, Default)]
 pub struct Snapshot {
-    decisions: Vec<PayloadDecision>,
-    events: Vec<PayloadEvent>,
+    decisions: Vec<Decision>,
+    #[serde(rename = "events")]
+    conversions: Vec<Conversion>,
 }
 
 impl Snapshot {
-    pub fn new() -> Snapshot {
-        Snapshot::default()
-    }
-
-    pub fn add_decision(&mut self, decision: &CrateDecision) {
-        // TODO: impl From trait
-        let decision = PayloadDecision::new(
-            decision.campaign_id().into(),
-            decision.experiment_id().into(),
-            decision.variation_id().into(),
-        );
+    pub fn add_decision_event(&mut self, decision: Decision) {
         self.decisions.push(decision);
     }
 
-    pub fn add_event(&mut self, conversion: &CrateConversion) {
-        // TODO: impl From trait
-        let event = PayloadEvent::new(
-            conversion.event_id().into(),
-            conversion.event_key().into(),
-            conversion.properties().clone(),
-            conversion.tags().clone(),
-        );
-        self.events.push(event);
+    pub fn add_conversion_event(&mut self, event: Conversion) {
+        self.conversions.push(event);
     }
 }

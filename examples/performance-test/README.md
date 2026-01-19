@@ -2,7 +2,7 @@
 # Performance Test
 
 A performance test to compare the SDK of different languages.
-Each script will generate one million decisions for the flag `buy_button` from the sandbox datafile. The scripts can be adjusted to make the same number of decisions for the falgs from other data files.
+Each script will generate one million decisions for the flag `buy_button` from the sandbox datafile. The scripts can be adjusted to make the same number of decisions for the flags from other data files.
 The user IDs will start with the phrase "user" followed by a number from 0 to 999,999.
 Note that the times also include reading the datafile from disk and initializing the SDK. However, this should only be a fraction of the total time for one million decisions.
 

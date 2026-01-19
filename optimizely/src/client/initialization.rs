@@ -1,81 +1,49 @@
-// External imports
 use error_stack::{Result, ResultExt};
-use std::fs::File;
-use std::io::Read;
+use std::time::Duration;
 
 // Imports from crate
-use crate::client::{Client, ClientError};
+use crate::client::Client;
 use crate::datafile::Datafile;
-
+use crate::error::ClientError;
 #[cfg(feature = "online")]
-use crate::event_api::{EventDispatcher, SimpleEventDispatcher};
+use crate::event_api::EventDispatcher;
+use crate::DecideOptions;
 
-/// An intermediate struct that is returned when building a new Client
+/// Intermediate struct that is used to initialize a new [Client].
 ///
-/// ```
-/// use optimizely::Client;
-/// use optimizely::event_api::BatchedEventDispatcher;
-///
-/// // Initialize Optimizely client using local datafile and custom event dispatcher
-/// let file_path = "../datafiles/sandbox.json";
-/// let event_dispatcher = BatchedEventDispatcher::default();
-/// let optimizely_client = Client::from_local_datafile(file_path)?
-///     .with_event_dispatcher(event_dispatcher)
-///     .initialize();
-///
-/// # Ok::<(), Box<dyn std::error::Error>>(())
-/// ```
+/// See [super] for examples.
 pub struct UninitializedClient {
-    datafile: Datafile,
-    _default_decide_options: Option<()>,
-    _user_profile_service: Option<()>,
+    pub(crate) datafile: Datafile,
+    pub(crate) update_interval: Option<Duration>,
+    pub(crate) default_decide_options: Option<DecideOptions>,
     #[cfg(feature = "online")]
-    event_dispatcher: Option<Box<dyn EventDispatcher>>,
+    pub(crate) event_dispatcher: Option<Box<dyn EventDispatcher>>,
 }
 
 impl Client {
     /// Download the datafile from the CDN using an SDK key
     #[cfg(feature = "online")]
     pub fn from_sdk_key(sdk_key: &str) -> Result<UninitializedClient, ClientError> {
-        // Construct URL
-        let url = format!("https://cdn.optimizely.com/datafiles/{}.json", sdk_key);
-
-        // Make GET request
-        // TODO: implement polling mechanism
-        let response = ureq::get(&url)
-            .call()
-            .change_context(ClientError::FailedRequest)?;
-
-        // Get response body
-        let content = response
-            .into_string()
-            .change_context(ClientError::FailedResponse)?;
-
-        // Use response to build Client
-        Client::from_string(&content)
+        let datafile = Datafile::from_sdk_key(sdk_key).change_context(ClientError::InvalidDatafile)?;
+        Client::from_datafile(datafile)
     }
 
     /// Read the datafile from the local filesystem
     pub fn from_local_datafile(file_path: &str) -> Result<UninitializedClient, ClientError> {
-        // Read content from local path
-        let mut content = String::new();
-
-        // Open file
-        let mut file = File::open(file_path).change_context(ClientError::FailedFileOpen)?;
-
-        // Read file content into String
-        file.read_to_string(&mut content)
-            .change_context(ClientError::FailedFileRead)?;
-
-        // Use file content to build Client
-        Client::from_string(&content)
+        let datafile = Datafile::from_local_datafile(file_path).change_context(ClientError::InvalidDatafile)?;
+        Client::from_datafile(datafile)
     }
 
     /// Use a string variable as the datafile
-    pub fn from_string(content: &str) -> Result<UninitializedClient, ClientError> {
-        // Create datafile from a string
-        let datafile = Datafile::build(content).change_context(ClientError::InvalidDatafile)?;
+    pub fn from_string<S>(content: S) -> Result<UninitializedClient, ClientError>
+    where
+        S: AsRef<str>,
+    {
+        let datafile = Datafile::from_string(content).change_context(ClientError::InvalidDatafile)?;
+        Client::from_datafile(datafile)
+    }
 
+    fn from_datafile(datafile: Datafile) -> Result<UninitializedClient, ClientError> {
         // Return uninitialized client
         Ok(UninitializedClient::new(datafile))
     }
@@ -85,31 +53,60 @@ impl UninitializedClient {
     pub(super) fn new(datafile: Datafile) -> UninitializedClient {
         UninitializedClient {
             datafile,
-            _default_decide_options: None,
-            _user_profile_service: None,
+            update_interval: None,
+            default_decide_options: None,
             #[cfg(feature = "online")]
             event_dispatcher: None,
         }
     }
 
     /// Use a custom event dispatcher
+    ///
+    /// This method accepts a function that can be used to create an EventDispatcher
+    ///
+    /// If you implement your own EventDispatcher, you could write a method new with the following signature:
+    /// `fn new(datafile: &Datafile) -> Self;`
+    /// And call this method like so:
+    /// `.with_event_dispatcher(BatchedEventDispatcher::new)`
+    ///
+    /// Or you could call this method with an anonymous function like so:
+    /// `.with_event_dispatcher(|_| EventStore::default())`
     #[cfg(feature = "online")]
-    pub fn with_event_dispatcher(mut self, event_dispatcher: impl EventDispatcher + 'static) -> UninitializedClient {
-        self.event_dispatcher = Some(Box::new(event_dispatcher));
+    pub fn with_event_dispatcher<F, D>(mut self, dispatcher: F) -> UninitializedClient
+    where
+        F: FnOnce(&Datafile) -> D,
+        D: EventDispatcher,
+    {
+        // Create a new dispatcher of type <D>
+        let dispatcher = dispatcher(&self.datafile);
+
+        // Store in a Box<D>, since different EventDispatcher implementations are different types
+        self.event_dispatcher = Some(Box::new(dispatcher));
+
+        // Return self, so can chain other functions
         self
     }
 
-    // TODO: implement with_default_decide_options and with_user_profile_service
+    /// Use these decide options for every decide call (if none are specified)
+    pub fn with_default_decide_options(mut self, options: DecideOptions) -> UninitializedClient {
+        // Store decide options
+        self.default_decide_options = Some(options);
+
+        // Return self, so can chain other functions
+        self
+    }
+
+    /// Automatically fetch the latest datafile in a regular interval
+    pub fn with_update_interval(mut self, interval: Duration) -> UninitializedClient {
+        // Store interval
+        self.update_interval = Some(interval);
+
+        // Return self, so can chain other functions
+        self
+    }
 
     /// Initialize the client
     pub fn initialize(self) -> Client {
-        // Select default for any options that were not specified
-        Client {
-            datafile: self.datafile,
-            #[cfg(feature = "online")]
-            event_dispatcher: self
-                .event_dispatcher
-                .unwrap_or_else(|| Box::<SimpleEventDispatcher>::default()),
-        }
+        Client::from(self)
     }
 }

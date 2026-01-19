@@ -22,7 +22,7 @@ use optimizely::{event_api::BatchedEventDispatcher, Client};
 // Initialize Optimizely client using local datafile
 let file_path = "../datafiles/sandbox.json";
 let optimizely_client = Client::from_local_datafile(file_path)?
-    .with_event_dispatcher(BatchedEventDispatcher::default())
+    .with_event_dispatcher(BatchedEventDispatcher::new)
     .initialize();
 
 // Create user context for current user
@@ -53,7 +53,7 @@ All *unchecked* features are not supported in the Rust SDK, but are supported by
 - [ ] Decide options (others)
 - [X] Creating an user context
 - [X] Decide method consistent with other SDKs
-- [ ] Evaluating audience conditions
+- [X] Evaluating audience conditions
 - [ ] Variation variables
 - [ ] Forced decision methods
 - [ ] Mutual exclusion groups

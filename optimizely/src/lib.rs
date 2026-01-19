@@ -1,18 +1,19 @@
 #![doc = include_str!("../README.md")]
+#![cfg_attr(docsrs, feature(doc_cfg, doc_auto_cfg))]
 #![warn(missing_docs)]
 
-// Reimport/export of structs to make them available at top-level
+// Re-export the Client
 pub use client::Client;
-#[cfg(feature = "online")]
-pub use conversion::Conversion;
-pub use decision::Decision;
 
-// Regular modules
+// Re-export all types
+pub use types::*;
+
+// Standard modules
 pub mod client;
-#[cfg(feature = "online")]
-pub mod conversion;
 pub mod datafile;
-pub mod decision;
+pub mod error;
+mod types;
 
+// Optional module
 #[cfg(feature = "online")]
 pub mod event_api;

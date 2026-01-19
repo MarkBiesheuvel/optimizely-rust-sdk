@@ -1,47 +1,43 @@
 // External imports
-use serde::{Deserialize, Deserializer};
-use std::collections::HashMap;
+use serde::Deserialize;
 
 // Imports from super
-use super::{Event, Experiment, FeatureFlag, Rollout};
+use super::{
+    audience::Audience, rollout::Rollout, Attribute, AttributeMap, AudienceMap, Event, EventMap, Experiment,
+    ExperimentMap, FeatureFlag, FeatureFlagMap, Revision, RolloutMap,
+};
 
+/// Each Datafile is for exactly one Environment, so most methods are implemented on Environment instead of Datafile
 #[derive(Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct Environment {
-    #[serde(rename = "accountId")]
     account_id: String,
-    #[serde(rename = "projectId")]
     project_id: String,
-    #[serde(rename = "environmentKey")]
     environment_key: String,
-    #[serde(deserialize_with = "deserialize_revision")]
-    revision: u32,
-    #[serde(rename = "botFiltering")]
+    sdk_key: String,
+    revision: Revision,
     bot_filtering: bool,
     #[serde(rename = "anonymizeIP")]
     anonymize_ip: bool,
-    #[serde(rename = "events", deserialize_with = "Event::deserialize")]
-    events: HashMap<String, Event>,
-    #[serde(deserialize_with = "Experiment::deserialize")]
-    experiments: HashMap<String, Experiment>,
-    #[serde(deserialize_with = "Rollout::deserialize")]
-    rollouts: HashMap<String, Rollout>,
-    #[serde(rename = "featureFlags", deserialize_with = "FeatureFlag::deserialize")]
-    feature_flags: HashMap<String, FeatureFlag>,
-}
-
-fn deserialize_revision<'de, D>(deserializer: D) -> Result<u32, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    String::deserialize(deserializer)?
-        .parse::<u32>()
-        .map_err(serde::de::Error::custom)
+    events: EventMap,
+    attributes: AttributeMap,
+    #[serde(rename = "typedAudiences")]
+    #[allow(dead_code)]
+    audiences: AudienceMap,
+    experiments: ExperimentMap,
+    rollouts: RolloutMap,
+    feature_flags: FeatureFlagMap,
 }
 
 impl Environment {
     /// Getter for `account_id` field
     pub fn account_id(&self) -> &str {
         &self.account_id
+    }
+
+    /// Getter for `sdk_key` field
+    pub fn sdk_key(&self) -> &str {
+        &self.sdk_key
     }
 
     #[allow(dead_code)]
@@ -56,7 +52,7 @@ impl Environment {
 
     /// Getter for `revision` field
     pub fn revision(&self) -> u32 {
-        self.revision
+        *self.revision
     }
 
     #[allow(dead_code)]
@@ -69,19 +65,51 @@ impl Environment {
         self.anonymize_ip
     }
 
-    pub fn feature_flags(&self) -> &HashMap<String, FeatureFlag> {
-        &self.feature_flags
+    /// Get the flag with the given key
+    pub(crate) fn flag(&self, flag_key: &str) -> Option<&FeatureFlag> {
+        self.feature_flags.get(flag_key).or_else(|| {
+            log::warn!("Flag key '{flag_key}' does not exist in datafile");
+            None
+        })
     }
 
-    pub fn experiments(&self) -> &HashMap<String, Experiment> {
-        &self.experiments
+    /// Get the experiment with the given experiment ID
+    pub(crate) fn experiment(&self, experiment_id: &str) -> Option<&Experiment> {
+        self.experiments.get(experiment_id).or_else(|| {
+            log::warn!("Experiment ID '{experiment_id}' does not exist in datafile");
+            None
+        })
     }
 
-    pub fn rollouts(&self) -> &HashMap<String, Rollout> {
-        &self.rollouts
+    /// Get the rollout with the given rollout ID
+    pub(crate) fn rollout(&self, rollout_id: &str) -> Option<&Rollout> {
+        self.rollouts.get(rollout_id).or_else(|| {
+            log::warn!("Rollout ID '{rollout_id}' does not exist in datafile");
+            None
+        })
     }
 
-    pub fn events(&self) -> &HashMap<String, Event> {
-        &self.events
+    /// Get the event with the given key
+    pub(crate) fn event(&self, event_key: &str) -> Option<&Event> {
+        self.events.get(event_key).or_else(|| {
+            log::warn!("Event key '{event_key}' does not exist in datafile");
+            None
+        })
+    }
+
+    /// Get the attribute with the given key
+    pub(crate) fn attribute(&self, attribute_key: &str) -> Option<&Attribute> {
+        self.attributes.get(attribute_key).or_else(|| {
+            log::warn!("Attribute key '{attribute_key}' does not exist in datafile");
+            None
+        })
+    }
+
+    /// Get the audience with the given audience ID
+    pub(crate) fn audience(&self, audience_id: &str) -> Option<&Audience> {
+        self.audiences.get(audience_id).or_else(|| {
+            log::warn!("Audience id '{audience_id}' does not exist in datafile");
+            None
+        })
     }
 }

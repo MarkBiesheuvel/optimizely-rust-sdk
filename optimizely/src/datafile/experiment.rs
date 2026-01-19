@@ -3,23 +3,47 @@ use serde::{Deserialize, Deserializer};
 use std::collections::HashMap;
 
 // Imports from super
-use super::{TrafficAllocation, Variation};
+use super::{TrafficAllocation, Variation, VariationMap};
 
 #[derive(Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
 pub struct Experiment {
     #[serde()]
     id: String,
     #[serde(rename = "layerId")]
     campaign_id: String,
-    #[serde(rename = "trafficAllocation", deserialize_with = "TrafficAllocation::deserialize")]
     traffic_allocation: TrafficAllocation,
-    #[serde(rename = "variations", deserialize_with = "Variation::deserialize")]
-    variations: HashMap<String, Variation>,
+    audience_ids: Vec<String>, // TODO: use audienceConditions instead of audienceIds
+    variations: VariationMap,
 }
 
 impl Experiment {
-    // Method to deserialize an array of Experiments into a Hashmap of Experiments
-    pub fn deserialize<'de, D>(deserializer: D) -> Result<HashMap<String, Experiment>, D::Error>
+    pub fn id(&self) -> &str {
+        &self.id
+    }
+
+    pub fn campaign_id(&self) -> &str {
+        &self.campaign_id
+    }
+
+    pub fn traffic_allocation(&self) -> &TrafficAllocation {
+        &self.traffic_allocation
+    }
+
+    pub fn variation(&self, variation_id: &str) -> Option<&Variation> {
+        self.variations.get(variation_id)
+    }
+
+    pub fn audience_ids(&self) -> &[String] {
+        &self.audience_ids
+    }
+}
+
+#[derive(Debug)]
+pub struct ExperimentMap(HashMap<String, Experiment>);
+
+impl<'de> Deserialize<'de> for ExperimentMap {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
     {
@@ -27,25 +51,13 @@ impl Experiment {
         for experiment in Vec::<Experiment>::deserialize(deserializer)? {
             map.insert(experiment.id.clone(), experiment);
         }
-        Ok(map)
-    }
 
-    #[allow(dead_code)]
-    pub fn id(&self) -> &str {
-        &self.id
+        Ok(Self(map))
     }
+}
 
-    #[allow(dead_code)]
-    pub fn campaign_id(&self) -> &str {
-        &self.campaign_id
-    }
-
-    #[allow(dead_code)]
-    pub fn traffic_allocation(&self) -> &TrafficAllocation {
-        &self.traffic_allocation
-    }
-
-    pub fn variation(&self, variation_id: &str) -> Option<&Variation> {
-        self.variations.get(variation_id)
+impl ExperimentMap {
+    pub fn get(&self, id: &str) -> Option<&Experiment> {
+        self.0.get(id)
     }
 }

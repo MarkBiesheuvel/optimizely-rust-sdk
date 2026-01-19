@@ -2,6 +2,10 @@
 name = "performance-test"
 version = "0.1.0"
 edition = "2021"
+publish = false
+license = "Apache-2.0"
+description = "Example that measures the performance of bucketing 1 million user IDs"
+repository = "https://github.com/MarkBiesheuvel/optimizely-rust-sdk/tree/main/examples/performance-test"
 
 [dependencies.optimizely]
 path = "../../optimizely"

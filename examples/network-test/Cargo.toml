@@ -2,6 +2,10 @@
 name = "network-test"
 version = "0.1.0"
 edition = "2021"
+publish = false
+license = "Apache-2.0"
+description = "Example with logging enabled to showcase network requests"
+repository = "https://github.com/MarkBiesheuvel/optimizely-rust-sdk/tree/main/examples/network-test"
 
 [dependencies]
 env_logger = "0.10.0"

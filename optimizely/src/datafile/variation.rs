@@ -10,18 +10,35 @@ use std::collections::HashMap;
 /// The value of `is_feature_enabled` is `false` for the "off" variation.
 /// All other variations will have `is_feature_enabled` is `true`.
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Variation {
-    #[serde()]
     id: String,
-    #[serde()]
     key: String,
-    #[serde(rename = "featureEnabled")]
-    is_feature_enabled: bool,
+    feature_enabled: bool,
 }
 
 impl Variation {
-    // Method to deserialize an array of Variations into a Hashmap of Variations
-    pub fn deserialize<'de, D>(deserializer: D) -> Result<HashMap<String, Variation>, D::Error>
+    /// Getter for `id` field
+    pub fn id(&self) -> &str {
+        &self.id
+    }
+
+    /// Getter for `key` field
+    pub fn key(&self) -> &str {
+        &self.key
+    }
+
+    /// Getter for `is_feature_enabled` field
+    pub fn is_feature_enabled(&self) -> bool {
+        self.feature_enabled
+    }
+}
+
+#[derive(Debug)]
+pub struct VariationMap(HashMap<String, Variation>);
+
+impl<'de> Deserialize<'de> for VariationMap {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
     {
@@ -29,24 +46,13 @@ impl Variation {
         for variation in Vec::<Variation>::deserialize(deserializer)? {
             map.insert(variation.id.clone(), variation);
         }
-        Ok(map)
-    }
 
-    /// Getter for `id` field
-    #[allow(dead_code)]
-    pub fn id(&self) -> &str {
-        &self.id
+        Ok(Self(map))
     }
+}
 
-    /// Getter for `key` field
-    #[allow(dead_code)]
-    pub fn key(&self) -> &str {
-        &self.key
-    }
-
-    /// Getter for `is_feature_enabled` field
-    #[allow(dead_code)]
-    pub fn is_feature_enabled(&self) -> bool {
-        self.is_feature_enabled
+impl VariationMap {
+    pub fn get(&self, id: &str) -> Option<&Variation> {
+        self.0.get(id)
     }
 }

@@ -4,7 +4,7 @@ use std::default::Default;
 ///
 /// ```
 /// use optimizely::Client;
-/// use optimizely::decision::DecideOptions;
+/// use optimizely::DecideOptions;
 /// #
 /// # let file_path = "../datafiles/sandbox.json";
 /// # let flag_key = "buy_button";
