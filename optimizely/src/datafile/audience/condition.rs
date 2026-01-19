@@ -255,7 +255,7 @@ impl<'de> Visitor<'de> for ConditionVisitor {
         let mut attribute_name = Option::None;
         let mut value = Option::None;
 
-        // Iterate ovr all keys
+        // Iterate over all keys
         while let Some(key) = map.next_key::<Field>()? {
             match key {
                 Field::MatchType => {

@@ -8,7 +8,7 @@ use serde::Deserialize;
 pub enum AttributeValue {
     /// An integer number
     Integer(u64),
-    /// A december number
+    /// A decimal number
     Decimal(f64),
     /// A true or false value
     Boolean(bool),
