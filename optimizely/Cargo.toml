@@ -1,7 +1,7 @@
 [package]
 name = "optimizely"
 authors = ["Mark Biesheuvel <mark.biesheuvel@optimizely.com>"]
-version = "0.5.0"
+version = "0.6.0-dev"
 edition = "2021"
 rust-version = "1.83"
 description = "An unofficial Rust SDK for Optimizely Feature Experimentation"
