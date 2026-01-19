@@ -21,9 +21,6 @@ exclude = [
     ".vscode",
 ]
 
-[package.metadata.docs.rs]
-all-features = true
-
 [lints.rust]
 unsafe_code = "forbid"
 

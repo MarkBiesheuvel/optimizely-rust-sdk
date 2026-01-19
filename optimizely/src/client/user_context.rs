@@ -126,7 +126,7 @@ impl UserContext<'_> {
     /// Decide which variation to show to a user
     pub fn decide(&self, flag_key: &str) -> Decision {
         let options = self.client().default_decide_options();
-        self.decide_with_options(flag_key, &options)
+        self.decide_with_options(flag_key, options)
     }
 
     /// Decide which variation to show to a user

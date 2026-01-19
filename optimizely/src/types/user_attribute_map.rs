@@ -11,7 +11,7 @@ use super::UserAttribute;
 /// TODO: rewrite to map from datafile::Attribute to value
 pub(crate) struct UserAttributeMap(HashMap<String, UserAttribute>);
 
-impl<'a> Deref for UserAttributeMap {
+impl Deref for UserAttributeMap {
     type Target = HashMap<String, UserAttribute>;
 
     fn deref(&self) -> &Self::Target {

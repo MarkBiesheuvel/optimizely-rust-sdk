@@ -52,7 +52,7 @@ impl Client {
 impl UninitializedClient {
     pub(super) fn new(datafile: Datafile) -> UninitializedClient {
         UninitializedClient {
-            datafile: datafile,
+            datafile,
             update_interval: None,
             default_decide_options: None,
             #[cfg(feature = "online")]

@@ -14,6 +14,9 @@ test:
 fmt:
   cargo fmt --all
 
+clippy:
+  cargo clippy
+
 dry-run-publish:
   cargo publish --dry-run --allow-dirty -p optimizely
 

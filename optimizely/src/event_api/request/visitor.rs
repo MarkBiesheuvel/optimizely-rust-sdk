@@ -37,7 +37,7 @@ impl From<&UserContext<'_>> for Visitor {
         let attributes = user
             .user_attributes()
             .into_iter()
-            .map(|attribute| attribute.clone())
+            .cloned()
             .collect::<Vec<_>>();
 
         Visitor::new(user_id, attributes)
