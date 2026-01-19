@@ -7,6 +7,7 @@ rust-version = "1.83"
 description = "An unofficial Rust SDK for Optimizely Feature Experimentation"
 readme = "README.md"
 repository = "https://github.com/MarkBiesheuvel/optimizely-rust-sdk"
+documentation = "https://docs.rs/optimizely/"
 license = "Apache-2.0"
 keywords = [
     "optimizely",
@@ -19,6 +20,9 @@ exclude = [
     ".github",
     ".vscode",
 ]
+
+[package.metadata.docs.rs]
+all-features = true
 
 [lints.rust]
 unsafe_code = "forbid"
