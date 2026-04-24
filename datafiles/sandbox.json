@@ -1,7 +1,7 @@
 {
   "accountId": "21537940595",
   "projectId": "6544469315551232",
-  "revision": "21",
+  "revision": "34",
   "attributes": [
     {
       "id": "5093911597678592",
@@ -52,7 +52,7 @@
     {
       "id": "6385081309200384",
       "experimentIds": [
-        "9300002920769"
+        "9300003127470"
       ],
       "key": "add_to_cart"
     },
@@ -170,6 +170,47 @@
       "rolloutId": "rollout-503562-911768386522787",
       "experimentIds": [],
       "variables": []
+    },
+    {
+      "id": "543273",
+      "key": "flag_with_variables",
+      "rolloutId": "rollout-543273-911768386522787",
+      "experimentIds": [
+        "9300003127470"
+      ],
+      "variables": [
+        {
+          "id": "188776",
+          "key": "is_discounted",
+          "type": "boolean",
+          "defaultValue": "true"
+        },
+        {
+          "id": "188779",
+          "key": "discount_percentage",
+          "type": "double",
+          "defaultValue": "2.5"
+        },
+        {
+          "id": "188780",
+          "key": "minimum_number_of_items",
+          "type": "integer",
+          "defaultValue": "1"
+        },
+        {
+          "id": "188781",
+          "key": "promotion_name",
+          "type": "string",
+          "defaultValue": "Spring Sales"
+        },
+        {
+          "id": "188782",
+          "key": "addition_info",
+          "type": "string",
+          "defaultValue": "{\"foo\": \"bar\"}",
+          "subType": "json"
+        }
+      ]
     }
   ],
   "rollouts": [
@@ -197,7 +238,8 @@
           ],
           "forcedVariations": {},
           "audienceIds": [],
-          "audienceConditions": []
+          "audienceConditions": [],
+          "type": "td"
         }
       ]
     },
@@ -225,7 +267,8 @@
           ],
           "forcedVariations": {},
           "audienceIds": [],
-          "audienceConditions": []
+          "audienceConditions": [],
+          "type": "td"
         },
         {
           "id": "default-rollout-503559-911768386522787",
@@ -248,7 +291,8 @@
           ],
           "forcedVariations": {},
           "audienceIds": [],
-          "audienceConditions": []
+          "audienceConditions": [],
+          "type": "td"
         }
       ]
     },
@@ -281,7 +325,8 @@
           "audienceConditions": [
             "or",
             "6472389697994752"
-          ]
+          ],
+          "type": "td"
         },
         {
           "id": "9300002920815",
@@ -309,7 +354,8 @@
           "audienceConditions": [
             "or",
             "5722963941523456"
-          ]
+          ],
+          "type": "td"
         },
         {
           "id": "9300002920816",
@@ -337,7 +383,8 @@
           "audienceConditions": [
             "or",
             "5334349403389952"
-          ]
+          ],
+          "type": "td"
         },
         {
           "id": "9300002920817",
@@ -365,7 +412,8 @@
           "audienceConditions": [
             "or",
             "4534887915454464"
-          ]
+          ],
+          "type": "td"
         },
         {
           "id": "default-rollout-503562-911768386522787",
@@ -388,7 +436,58 @@
           ],
           "forcedVariations": {},
           "audienceIds": [],
-          "audienceConditions": []
+          "audienceConditions": [],
+          "type": "td"
+        }
+      ]
+    },
+    {
+      "id": "rollout-543273-911768386522787",
+      "experiments": [
+        {
+          "id": "default-rollout-543273-911768386522787",
+          "key": "default-rollout-543273-911768386522787",
+          "status": "Running",
+          "layerId": "rollout-543273-911768386522787",
+          "variations": [
+            {
+              "id": "1716247",
+              "key": "off",
+              "featureEnabled": false,
+              "variables": [
+                {
+                  "id": "188776",
+                  "value": "true"
+                },
+                {
+                  "id": "188779",
+                  "value": "2.5"
+                },
+                {
+                  "id": "188780",
+                  "value": "1"
+                },
+                {
+                  "id": "188781",
+                  "value": "Spring Sales"
+                },
+                {
+                  "id": "188782",
+                  "value": "{\"foo\": \"bar\"}"
+                }
+              ]
+            }
+          ],
+          "trafficAllocation": [
+            {
+              "entityId": "1716247",
+              "endOfRange": 10000
+            }
+          ],
+          "forcedVariations": {},
+          "audienceIds": [],
+          "audienceConditions": [],
+          "type": "td"
         }
       ]
     }
@@ -435,7 +534,84 @@
       ],
       "forcedVariations": {},
       "audienceIds": [],
-      "audienceConditions": []
+      "audienceConditions": [],
+      "type": "ab"
+    },
+    {
+      "id": "9300003127470",
+      "key": "variables_exp",
+      "status": "Running",
+      "layerId": "9300002379208",
+      "variations": [
+        {
+          "id": "1716260",
+          "key": "variation_1",
+          "featureEnabled": true,
+          "variables": [
+            {
+              "id": "188776",
+              "value": "true"
+            },
+            {
+              "id": "188779",
+              "value": "2.5"
+            },
+            {
+              "id": "188780",
+              "value": "1"
+            },
+            {
+              "id": "188781",
+              "value": "Spring Sales"
+            },
+            {
+              "id": "188782",
+              "value": "{\n  \"foo\": \"bar\"\n}"
+            }
+          ]
+        },
+        {
+          "id": "1716261",
+          "key": "variation_2",
+          "featureEnabled": true,
+          "variables": [
+            {
+              "id": "188776",
+              "value": "true"
+            },
+            {
+              "id": "188779",
+              "value": "4"
+            },
+            {
+              "id": "188780",
+              "value": "2"
+            },
+            {
+              "id": "188781",
+              "value": "Summer Sales"
+            },
+            {
+              "id": "188782",
+              "value": "{\n  \"foo\": \"baz\"\n}"
+            }
+          ]
+        }
+      ],
+      "trafficAllocation": [
+        {
+          "entityId": "1716260",
+          "endOfRange": 5000
+        },
+        {
+          "entityId": "1716261",
+          "endOfRange": 10000
+        }
+      ],
+      "forcedVariations": {},
+      "audienceIds": [],
+      "audienceConditions": [],
+      "type": "ab"
     }
   ],
   "groups": [],
