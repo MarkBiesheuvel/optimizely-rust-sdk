@@ -168,3 +168,16 @@ fn targeted_delivery() -> Result<(), Box<dyn Error>> {
 
     Ok(())
 }
+
+#[test]
+fn variables() -> Result<(), Box<dyn Error>> {
+    let ctx = setup()?;
+    let flag_key = "flag_with_variables";
+
+    // Create user context
+    let user_context = ctx.client.create_user_context("user0");
+
+    user_context.decide(flag_key);
+
+    Ok(())
+}

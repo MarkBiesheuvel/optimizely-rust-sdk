@@ -144,6 +144,15 @@ impl UserContext<'_> {
             }
         };
 
+        // TMP: debug statement
+        if flag_key == "flag_with_variables" {
+            dbg!(flag.variable("188776"));
+            dbg!(flag.variable("188779"));
+            dbg!(flag.variable("188780"));
+            dbg!(flag.variable("188781"));
+            dbg!(flag.variable("188782"));
+        }
+
         // Only send decision events if the disable_decision_event option is false
         let mut send_decision = !options.disable_decision_event;
 

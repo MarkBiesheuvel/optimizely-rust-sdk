@@ -16,6 +16,7 @@ pub(crate) use feature_flag::{FeatureFlag, FeatureFlagMap};
 use revision::Revision;
 use rollout::RolloutMap;
 use traffic_allocation::TrafficAllocation;
+pub(crate) use variable_definition::{VariableDefinition, VariableDefinitionMap};
 pub(crate) use variation::{Variation, VariationMap};
 
 mod attribute;
@@ -27,6 +28,7 @@ mod feature_flag;
 mod revision;
 mod rollout;
 mod traffic_allocation;
+mod variable_definition;
 mod variation;
 
 /// The datafile contains all the feature flags, experiments, events and other configuration from an Optimizely account.

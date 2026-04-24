@@ -2,6 +2,8 @@
 use serde::{Deserialize, Deserializer};
 use std::collections::HashMap;
 
+use super::{VariableDefinition, VariableDefinitionMap};
+
 /// Optimizely feature flag.
 #[derive(Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
@@ -9,7 +11,7 @@ pub(crate) struct FeatureFlag {
     key: String,
     rollout_id: String,
     experiment_ids: Vec<String>,
-    // TODO: variables
+    variables: VariableDefinitionMap,
 }
 
 impl FeatureFlag {
@@ -24,6 +26,10 @@ impl FeatureFlag {
 
     pub fn experiments_ids(&self) -> &[String] {
         &self.experiment_ids
+    }
+
+    pub fn variable(&self, id: &str) -> Option<&VariableDefinition> {
+        self.variables.get(id)
     }
 }
 
